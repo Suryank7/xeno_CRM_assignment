@@ -1,0 +1,11 @@
+customerEmail,orderNumber,amount,itemName,category,status,orderDate
+rahul.sharma@example.com,ORD-001,2500,Arabica Beans,Coffee,delivered,2026-06-05
+rahul.sharma@example.com,ORD-002,1800,Cold Brew Pack,Coffee,delivered,2026-05-20
+priya.patel@example.com,ORD-003,3500,Denim Jacket,Apparel,delivered,2026-02-10
+amit.gupta@example.com,ORD-004,4500,Wireless Earbuds,Electronics,delivered,2026-06-01
+sneha.reddy@example.com,ORD-005,800,Face Cream,Beauty,delivered,2026-03-15
+vikram.singh@example.com,ORD-006,3000,Linen Shirt,Apparel,delivered,2026-05-20
+rohan.joshi@example.com,ORD-007,1500,Espresso Pods,Coffee,delivered,2026-06-08
+kavita.nair@example.com,ORD-008,2200,Sunscreen SPF50,Beauty,delivered,2026-04-10
+neha.kapoor@example.com,ORD-009,1400,Yoga Mat,Fitness,delivered,2026-05-15
+amit.gupta@example.com,ORD-010,5500,Smart Watch,Electronics,delivered,2026-05-28

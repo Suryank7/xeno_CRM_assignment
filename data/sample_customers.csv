@@ -1,0 +1,11 @@
+name,email,phone,age,city,totalOrders,totalSpent,lastOrderDate,tags
+Rahul Sharma,rahul.sharma@example.com,+919876543210,25,Delhi,10,15000,2026-06-05,"vip,frequent,coffee"
+Priya Patel,priya.patel@example.com,+919876543211,30,Mumbai,2,3500,2026-02-10,"inactive"
+Amit Gupta,amit.gupta@example.com,+919876543212,28,Bangalore,15,22000,2026-06-01,"vip,frequent,electronics"
+Sneha Reddy,sneha.reddy@example.com,+919876543213,22,Hyderabad,1,800,2026-03-15,"young"
+Vikram Singh,vikram.singh@example.com,+919876543214,35,Pune,8,12000,2026-05-20,"vip,apparel"
+Anjali Mehta,anjali.mehta@example.com,+919876543215,26,Jaipur,3,4500,2026-01-05,"inactive,young"
+Rohan Joshi,rohan.joshi@example.com,+919876543216,32,Chennai,20,35000,2026-06-08,"vip,frequent,coffee"
+Kavita Nair,kavita.nair@example.com,+919876543217,29,Kochi,5,7500,2026-04-10,"beauty"
+Arjun Malhotra,arjun.malhotra@example.com,+919876543218,24,Gurgaon,0,0,,"young"
+Neha Kapoor,neha.kapoor@example.com,+919876543219,27,Chandigarh,7,9800,2026-05-15,"frequent,fitness"
