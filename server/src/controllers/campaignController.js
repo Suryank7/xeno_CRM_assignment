@@ -44,8 +44,107 @@ exports.createCampaign = async (req, res, next) => {
   }
 };
 
+// Helper function to process the campaign in the background
+async function processCampaign(campaign, customers) {
+  try {
+    campaign.status = 'sending';
+    await campaign.save();
+
+    const hasVariants = campaign.messageVariants && campaign.messageVariants.length > 0;
+
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < customers.length; i += BATCH_SIZE) {
+      const batch = customers.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(batch.map(async (customer, index) => {
+        // A/B Test Variant Selection (Round Robin)
+        const globalIndex = i + index;
+        let selectedVariant = null;
+        let templateToUse = campaign.messageTemplate;
+
+        if (hasVariants) {
+          selectedVariant = campaign.messageVariants[globalIndex % campaign.messageVariants.length];
+          templateToUse = selectedVariant.message;
+        }
+
+        const personalizedContent = renderTemplate(templateToUse, {
+          name: customer.name,
+          city: customer.city,
+          totalOrders: customer.totalOrders,
+          totalSpent: customer.totalSpent,
+        });
+
+        const message = await Message.create({
+          campaignId: campaign._id,
+          customerId: customer._id,
+          channel: campaign.channel,
+          content: personalizedContent,
+          variantId: selectedVariant ? selectedVariant.variantId : null,
+          status: 'queued',
+          statusHistory: [{ status: 'queued', timestamp: new Date() }],
+        });
+
+        try {
+          await axios.post(`${CHANNEL_SERVICE_URL}/send`, {
+            messageId: message._id.toString(),
+            campaignId: campaign._id.toString(),
+            recipient: {
+              name: customer.name,
+              email: customer.email,
+              phone: customer.phone,
+            },
+            channel: campaign.channel,
+            content: personalizedContent,
+            callbackUrl: `${process.env.CRM_BASE_URL || 'http://localhost:5000'}/api/receipt`,
+          });
+
+          message.status = 'sent';
+          message.sentAt = new Date();
+          message.statusHistory.push({ status: 'sent', timestamp: new Date() });
+          await message.save();
+          return 'sent';
+        } catch (err) {
+          message.status = 'failed';
+          message.statusHistory.push({ status: 'failed', timestamp: new Date() });
+          await message.save();
+          console.error(`Failed to send message ${message._id}: ${err.message}`);
+          return 'failed';
+        }
+      }));
+
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value === 'sent') campaign.stats.sent += 1;
+        else campaign.stats.failed += 1;
+      }
+    }
+
+    campaign.status = 'completed';
+    campaign.completedAt = new Date();
+    await campaign.save();
+    console.log(`✅ Campaign ${campaign._id} completed: ${campaign.stats.sent} sent, ${campaign.stats.failed} failed`);
+
+    try {
+      const { learnFromCampaign } = require('../services/learningEngine');
+      const learningResult = await learnFromCampaign(campaign._id);
+      console.log(`📚 Auto-learning complete: Score ${learningResult.analysis?.analytics?.performanceScore}/100`);
+      
+      const { fireWebhook } = require('../services/webhookService');
+      await fireWebhook('campaign.completed', {
+        campaignId: campaign._id,
+        name: campaign.name,
+        stats: campaign.stats
+      });
+    } catch (learnErr) {
+      console.warn(`⚠️  Auto-learning or webhook failed: ${learnErr.message}`);
+    }
+  } catch (error) {
+    console.error(`❌ Background processing failed for campaign ${campaign._id}:`, error);
+    campaign.status = 'failed';
+    await campaign.save();
+  }
+}
+
 /**
- * Launch a campaign: resolve segment, personalize messages, send to channel service.
+ * Launch a campaign (send messages to its segment).
  * POST /api/campaigns/:id/launch
  */
 exports.launchCampaign = async (req, res, next) => {
@@ -62,75 +161,38 @@ exports.launchCampaign = async (req, res, next) => {
       throw new AppError('No customers match this segment', 400);
     }
 
-    // Update campaign status
-    campaign.status = 'sending';
     campaign.stats.total = customers.length;
+
+    // Check if scheduled
+    const now = new Date();
+    if (campaign.scheduledAt && new Date(campaign.scheduledAt) > now) {
+      const delayMs = new Date(campaign.scheduledAt) - now;
+      campaign.status = 'scheduled';
+      await campaign.save();
+
+      // Simple scheduling via setTimeout (good for short delays/prototypes)
+      setTimeout(() => processCampaign(campaign, customers), delayMs);
+      console.log(`⏱️  Campaign ${campaign._id} scheduled to run in ${Math.round(delayMs / 1000)}s`);
+
+      return res.json({
+        success: true,
+        message: `Campaign scheduled! Sending to ${customers.length} customers at ${new Date(campaign.scheduledAt).toLocaleString()}.`,
+        data: campaign,
+      });
+    }
+
+    // Otherwise, launch immediately
+    campaign.status = 'sending';
     await campaign.save();
 
-    // Create Message documents and send to channel service (fire-and-forget)
-    // We respond immediately, sending happens in the background.
     res.json({
       success: true,
       message: `Campaign launched! Sending to ${customers.length} customers.`,
       data: campaign,
     });
 
-    // --- Background sending loop ---
-    for (const customer of customers) {
-      const personalizedContent = renderTemplate(campaign.messageTemplate, {
-        name: customer.name,
-        city: customer.city,
-        totalOrders: customer.totalOrders,
-        totalSpent: customer.totalSpent,
-      });
-
-      // Create message record
-      const message = await Message.create({
-        campaignId: campaign._id,
-        customerId: customer._id,
-        channel: campaign.channel,
-        content: personalizedContent,
-        status: 'queued',
-        statusHistory: [{ status: 'queued', timestamp: new Date() }],
-      });
-
-      // Send to channel service (non-blocking, with basic error handling)
-      try {
-        await axios.post(`${CHANNEL_SERVICE_URL}/send`, {
-          messageId: message._id.toString(),
-          campaignId: campaign._id.toString(),
-          recipient: {
-            name: customer.name,
-            email: customer.email,
-            phone: customer.phone,
-          },
-          channel: campaign.channel,
-          content: personalizedContent,
-          callbackUrl: `${process.env.CRM_BASE_URL || 'http://localhost:5000'}/api/receipt`,
-        });
-
-        // Mark as sent
-        message.status = 'sent';
-        message.sentAt = new Date();
-        message.statusHistory.push({ status: 'sent', timestamp: new Date() });
-        await message.save();
-
-        campaign.stats.sent += 1;
-      } catch (err) {
-        message.status = 'failed';
-        message.statusHistory.push({ status: 'failed', timestamp: new Date() });
-        await message.save();
-
-        campaign.stats.failed += 1;
-        console.error(`Failed to send message ${message._id}: ${err.message}`);
-      }
-    }
-
-    // Mark campaign as completed after all sends
-    campaign.status = 'completed';
-    campaign.completedAt = new Date();
-    await campaign.save();
-    console.log(`✅ Campaign ${campaign._id} completed: ${campaign.stats.sent} sent, ${campaign.stats.failed} failed`);
+    // Run in background
+    processCampaign(campaign, customers);
   } catch (error) {
     next(error);
   }
@@ -194,6 +256,32 @@ exports.getCampaignMessages = async (req, res, next) => {
       data: messages,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get aggregated channel performance stats.
+ * GET /api/campaigns/stats/channels
+ */
+exports.getChannelStats = async (req, res, next) => {
+  try {
+    const stats = await Campaign.aggregate([
+      { $match: { status: 'completed' } },
+      { $group: {
+          _id: '$channel',
+          campaigns: { $sum: 1 },
+          sent: { $sum: '$stats.sent' },
+          delivered: { $sum: '$stats.delivered' },
+          opened: { $sum: '$stats.opened' },
+          clicked: { $sum: '$stats.clicked' },
+          purchased: { $sum: '$stats.purchased' }
+        }
+      }
+    ]);
+
+    res.json({ success: true, data: stats });
   } catch (error) {
     next(error);
   }

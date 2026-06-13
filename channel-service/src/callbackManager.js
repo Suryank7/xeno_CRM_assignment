@@ -32,6 +32,21 @@ async function sendCallback(callbackUrl, messageId, campaignId, status) {
     } catch (error) {
       if (attempt === MAX_RETRIES) {
         console.error(`  ❌ Callback failed after ${MAX_RETRIES} retries: message=${messageId.slice(-6)} → ${status}`);
+        
+        // Push to Dead-Letter Queue API
+        try {
+          const dlqUrl = callbackUrl.replace('/api/receipt', '/api/receipt/dlq');
+          await axios.post(dlqUrl, {
+            messageId,
+            campaignId,
+            status,
+            error: error.message,
+            payload: { messageId, campaignId, status }
+          });
+          console.log(`  📩 Sent to DLQ successfully.`);
+        } catch (dlqErr) {
+          console.error(`  💥 Failed to send to DLQ: ${dlqErr.message}`);
+        }
         return;
       }
 

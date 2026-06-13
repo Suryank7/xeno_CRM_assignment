@@ -76,6 +76,42 @@ exports.receiveReceipt = async (req, res, next) => {
 
     res.json({ success: true, message: `Status updated to ${status}` });
   } catch (error) {
+    // If it fails internally, try to save to DLQ
+    try {
+      const FailedCallback = require('../models/FailedCallback');
+      await FailedCallback.create({
+        messageId: req.body.messageId || 'unknown',
+        campaignId: req.body.campaignId || 'unknown',
+        status: req.body.status || 'unknown',
+        error: error.message,
+        payload: req.body
+      });
+    } catch (dlqErr) {
+      console.error('Failed to write to DLQ:', dlqErr.message);
+    }
+    next(error);
+  }
+};
+
+/**
+ * Handle Dead-Letter Queue items sent explicitly from the channel service
+ * POST /api/receipt/dlq
+ */
+exports.handleDLQ = async (req, res, next) => {
+  try {
+    const FailedCallback = require('../models/FailedCallback');
+    const { messageId, campaignId, status, error, payload } = req.body;
+    
+    await FailedCallback.create({
+      messageId: messageId || 'unknown',
+      campaignId: campaignId || 'unknown',
+      status: status || 'unknown',
+      error: error || 'Max retries exceeded by channel simulator',
+      payload: payload || req.body
+    });
+
+    res.json({ success: true, message: 'DLQ item recorded' });
+  } catch (error) {
     next(error);
   }
 };

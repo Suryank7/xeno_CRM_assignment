@@ -4,6 +4,7 @@ const channelAgent = require('./channelAgent');
 const analyticsAgent = require('./analyticsAgent');
 const optimizationAgent = require('./optimizationAgent');
 const Customer = require('../models/Customer');
+const Learning = require('../models/Learning');
 const { buildMongoQuery } = require('../controllers/segmentController');
 
 /**
@@ -14,6 +15,7 @@ const { buildMongoQuery } = require('../controllers/segmentController');
  *   Results → Analytics Agent → Optimization Agent → Learnings
  *
  * Each agent's output becomes context for the next.
+ * LEARNING LOOP: Past learnings are fed back to Audience + Campaign agents.
  */
 
 /**
@@ -27,9 +29,20 @@ const { buildMongoQuery } = require('../controllers/segmentController');
 async function runGrowthPipeline(goal, customerStats = {}) {
   console.log(`🤖 Running Growth Pipeline for goal: "${goal}"`);
 
-  // Step 1: Audience Agent — find the right customers
+  // LEARNING LOOP: Fetch past learnings to make each campaign smarter
+  let pastLearnings = [];
+  try {
+    pastLearnings = await Learning.find().sort({ createdAt: -1 }).limit(5).lean();
+    if (pastLearnings.length > 0) {
+      console.log(`  📚 Loaded ${pastLearnings.length} past learnings for context`);
+    }
+  } catch (err) {
+    console.warn('  ⚠️  Could not load past learnings:', err.message);
+  }
+
+  // Step 1: Audience Agent — find the right customers (with learning context)
   console.log('  → Step 1: Audience Agent');
-  const audience = await audienceAgent.run(goal, customerStats);
+  const audience = await audienceAgent.run(goal, customerStats, pastLearnings);
 
   // Calculate actual audience size from DB
   let audienceSize = 0;
@@ -45,12 +58,13 @@ async function runGrowthPipeline(goal, customerStats = {}) {
   console.log('  → Step 2: Channel Agent');
   const channelPrediction = await channelAgent.run(audience, { goal });
 
-  // Step 3: Campaign Agent — create message variants
+  // Step 3: Campaign Agent — create message variants (with learning context)
   console.log('  → Step 3: Campaign Agent');
   const campaign = await campaignAgent.run(
     goal,
     audience,
-    channelPrediction.recommendation || 'whatsapp'
+    channelPrediction.recommendation || 'whatsapp',
+    pastLearnings
   );
 
   // Assemble the complete plan

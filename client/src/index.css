@@ -1,4 +1,4 @@
-﻿/* ===================================================================
+/* ===================================================================
    XENO PULSE AI â€” Design System
    Inspired by: Premium dashboard UIs with card-based layouts,
    subtle shadows, gradient accents, and smooth micro-animations.
@@ -2125,4 +2125,92 @@ body {
   color: #7C3AED;
   text-decoration: none;
   font-weight: 600;
+}
+
+.page-fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ==========================================================================
+   Mobile Optimization (Responsive Design)
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Layout */
+  .app-layout {
+    flex-direction: column;
+  }
+  
+  .app-sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+  }
+
+  .sidebar-logo {
+    margin-bottom: 0;
+  }
+
+  .sidebar-nav {
+    display: none; /* Can be toggled via hamburger menu */
+    flex-direction: column;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    width: 100%;
+    background: white;
+    z-index: 100;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-light);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  }
+
+  .sidebar-nav.open {
+    display: flex;
+  }
+
+  /* Dashboard Grids */
+  .grid-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  div[style*="gridTemplateColumns: '2fr 1fr'"],
+  div[style*="grid-template-columns: 2fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Cards */
+  .card-body {
+    padding: 16px !important;
+  }
+
+  /* Header */
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 20px;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  /* Tables */
+  .data-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-stats {
+    grid-template-columns: 1fr;
+  }
 }

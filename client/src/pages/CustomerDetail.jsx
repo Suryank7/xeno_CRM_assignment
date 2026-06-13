@@ -11,6 +11,7 @@ export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [customer, setCustomer] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +20,13 @@ export default function CustomerDetail() {
 
   async function loadCustomer() {
     try {
-      const res = await getCustomerById(id);
+      const { getCustomerMessages } = await import('../services/api');
+      const [res, msgRes] = await Promise.all([
+        getCustomerById(id),
+        getCustomerMessages(id)
+      ]);
       setCustomer(res.data.data);
+      setMessages(msgRes.data.data);
     } catch (err) {
       console.error('Failed to load customer:', err);
     }
@@ -225,6 +231,71 @@ export default function CustomerDetail() {
                   </table>
                 ) : (
                   <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No orders yet</div>
+                )}
+              </div>
+            </div>
+
+            {/* Interaction Timeline */}
+            <div className="card animate-slide-up" style={{ animationDelay: '0.3s' }}>
+              <div className="card-header">
+                <h3 className="card-title">Messages Received</h3>
+              </div>
+              <div className="card-body" style={{ padding: '0 24px 24px' }}>
+                {messages?.length > 0 ? (
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Campaign</th>
+                        <th>Channel</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {messages.map((msg) => (
+                        <tr key={msg._id}>
+                          <td style={{ fontWeight: 600 }}>{msg.campaignId?.name || 'Unknown'}</td>
+                          <td><span className="tag tag-gray" style={{ textTransform: 'capitalize' }}>{msg.channel}</span></td>
+                          <td><span className={`status-badge status-${msg.status === 'failed' ? 'failed' : msg.status === 'purchased' ? 'completed' : msg.status === 'queued' ? 'draft' : 'sending'}`}>{msg.status}</span></td>
+                          <td>{new Date(msg.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No messages received yet</div>
+                )}
+              </div>
+            </div>
+            {/* Support Tickets */}
+            <div className="card animate-slide-up" style={{ animationDelay: '0.4s' }}>
+              <div className="card-header">
+                <h3 className="card-title">Support Tickets</h3>
+              </div>
+              <div className="card-body" style={{ padding: '0 24px 24px' }}>
+                {customer.tickets?.length > 0 ? (
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Ticket #</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th>Updated</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customer.tickets.map((ticket) => (
+                        <tr key={ticket._id}>
+                          <td style={{ fontWeight: 600 }}>{ticket.ticketNumber}</td>
+                          <td>{ticket.subject}</td>
+                          <td><span className={`status-badge status-${ticket.status === 'open' ? 'sending' : ticket.status === 'resolved' ? 'completed' : 'draft'}`}>{ticket.status}</span></td>
+                          <td>{new Date(ticket.updatedAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No support tickets</div>
                 )}
               </div>
             </div>

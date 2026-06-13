@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Send, Eye, MousePointerClick, ShoppingBag, AlertCircle,
-  Rocket, BookOpen, Sparkles,
+  Rocket, BookOpen, Sparkles, Download
 } from 'lucide-react';
 import Header from '../components/layout/Header';
-import { getCampaignById, launchCampaign, getCampaignMessages, aiLearn } from '../services/api';
+import { getCampaignById, launchCampaign, getCampaignMessages, aiLearn, exportCampaignCSV } from '../services/api';
 
 export default function CampaignDetail() {
   const { id } = useParams();
@@ -16,7 +16,9 @@ export default function CampaignDetail() {
   const [launching, setLaunching] = useState(false);
   const [learning, setLearning] = useState(null);
   const [learningLoading, setLearningLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [activeTab, setActiveTab] = useState('journey');
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => { loadCampaign(); }, [id]);
 
@@ -46,6 +48,10 @@ export default function CampaignDetail() {
             clearInterval(interval);
             const msgRes = await getCampaignMessages(id);
             setMessages(msgRes.data.data);
+            if (res.data.data.status === 'completed') {
+              setShowToast(true);
+              setTimeout(() => setShowToast(false), 5000);
+            }
           }
         } catch (e) { clearInterval(interval); }
       }, 3000);
@@ -64,6 +70,23 @@ export default function CampaignDetail() {
       alert('Learning failed: ' + err.message);
     }
     setLearningLoading(false);
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const response = await exportCampaignCSV(id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `campaign_${id}_report.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert('❌ Export failed: ' + err.message);
+    }
+    setExporting(false);
   }
 
   if (loading) return <><Header title="Campaign Detail" /><div className="app-content"><div className="animate-pulse" style={{ padding: 40, textAlign: 'center' }}>Loading...</div></div></>;
@@ -89,9 +112,14 @@ export default function CampaignDetail() {
           </button>
         )}
         {campaign.status === 'completed' && (
-          <button className="btn btn-secondary btn-sm" onClick={handleLearn} disabled={learningLoading}>
-            <BookOpen size={16} /> {learningLoading ? 'Analyzing...' : 'Learn from Results'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary btn-sm" onClick={handleExport} disabled={exporting}>
+              <Download size={16} /> {exporting ? 'Exporting...' : 'Export Report'}
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={handleLearn} disabled={learningLoading}>
+              <BookOpen size={16} /> {learningLoading ? 'Analyzing...' : 'Learn from Results'}
+            </button>
+          </div>
         )}
       </Header>
 
@@ -292,12 +320,69 @@ export default function CampaignDetail() {
                   {learning.analysis?.learnings?.recommendations?.map((rec, i) => (
                     <div key={i} style={{ fontSize: 13, color: 'var(--primary-600)', padding: '4px 0' }}>→ {rec}</div>
                   ))}
+
+                  {campaign.messageVariants?.length > 0 && (
+                    <div style={{ marginTop: 32 }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>A/B Test Variants</h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        {campaign.messageVariants.map((v) => (
+                          <div key={v.variantId} className="card" style={{ 
+                            padding: 16, 
+                            border: v.isWinner ? '2px solid var(--success)' : '1px solid var(--border-light)',
+                            background: v.isWinner ? '#ecfdf5' : 'white',
+                            position: 'relative'
+                          }}>
+                            {v.isWinner && (
+                              <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: 4, color: 'var(--success)', fontWeight: 700, fontSize: 12, background: 'white', padding: '4px 8px', borderRadius: 20, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                <Sparkles size={14} /> Winner
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                              <div style={{ background: v.isWinner ? 'var(--success)' : 'var(--primary-100)', color: v.isWinner ? 'white' : 'var(--primary-600)', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>
+                                {v.variantId}
+                              </div>
+                              <div style={{ fontWeight: 600, textTransform: 'capitalize' }}>{v.tone} Tone</div>
+                            </div>
+                            <div style={{ padding: 12, background: v.isWinner ? 'rgba(255,255,255,0.7)' : 'var(--bg-primary)', borderRadius: 8, fontSize: 14, color: 'var(--text-secondary)' }}>
+                              {v.message}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* In-app Toast Notification */}
+      {showToast && (
+        <div className="animate-slide-up" style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          background: 'white',
+          padding: '16px 24px',
+          borderRadius: 12,
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 1000,
+          borderLeft: '4px solid var(--success)'
+        }}>
+          <div style={{ background: '#ecfdf5', color: 'var(--success)', padding: 8, borderRadius: '50%' }}>
+            <Sparkles size={20} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Campaign Completed!</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Successfully sent to {campaign.stats?.sent || 0} customers.</div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

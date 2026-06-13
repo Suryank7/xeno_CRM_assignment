@@ -2,6 +2,7 @@ const { runGrowthPipeline, runAutonomousPlan, runPostCampaignAnalysis } = requir
 const audienceAgent = require('../agents/audienceAgent');
 const campaignAgent = require('../agents/campaignAgent');
 const channelAgent = require('../agents/channelAgent');
+const executiveAgent = require('../agents/executiveAgent');
 const { scanOpportunities } = require('../services/opportunityScanner');
 const { generatePersonas } = require('../services/personaService');
 const { learnFromCampaign, getRecentLearnings } = require('../services/learningEngine');
@@ -10,6 +11,7 @@ const Segment = require('../models/Segment');
 const Campaign = require('../models/Campaign');
 const Persona = require('../models/Persona');
 const Opportunity = require('../models/Opportunity');
+const Learning = require('../models/Learning');
 const { buildMongoQuery } = require('./segmentController');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -255,3 +257,119 @@ async function getCustomerStats() {
     totalRevenue: Math.round(stats[0]?.totalRevenue || 0),
   };
 }
+
+/**
+ * Executive Brief — AI-generated business health snapshot.
+ * GET /api/ai/executive-brief
+ */
+exports.executiveBrief = async (req, res, next) => {
+  try {
+    const customerStats = await getCustomerStats();
+
+    // Gather campaign metrics
+    const campaigns = await Campaign.find().lean();
+    const completedCampaigns = campaigns.filter(c => c.status === 'completed');
+    const avgDeliveryRate = completedCampaigns.length > 0
+      ? Math.round(completedCampaigns.reduce((sum, c) => sum + (c.stats?.total > 0 ? (c.stats.delivered / c.stats.total) * 100 : 0), 0) / completedCampaigns.length)
+      : 0;
+    const avgOpenRate = completedCampaigns.length > 0
+      ? Math.round(completedCampaigns.reduce((sum, c) => sum + (c.stats?.delivered > 0 ? (c.stats.opened / c.stats.delivered) * 100 : 0), 0) / completedCampaigns.length)
+      : 0;
+    const avgConversionRate = completedCampaigns.length > 0
+      ? Math.round(completedCampaigns.reduce((sum, c) => sum + (c.stats?.total > 0 ? (c.stats.purchased / c.stats.total) * 100 : 0), 0) / completedCampaigns.length)
+      : 0;
+
+    const campaignMetrics = {
+      totalCampaigns: campaigns.length,
+      completedCampaigns: completedCampaigns.length,
+      avgDeliveryRate,
+      avgOpenRate,
+      avgConversionRate,
+    };
+
+    const opportunities = await Opportunity.find({ status: 'new' }).lean();
+    const learnings = await Learning.find().sort({ createdAt: -1 }).limit(5).lean();
+
+    const brief = await executiveAgent.run(customerStats, campaignMetrics, opportunities, learnings);
+
+    res.json({ success: true, data: brief });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Export customers as CSV.
+ * GET /api/customers/export
+ */
+exports.exportCustomersCSV = async (req, res, next) => {
+  try {
+    const customers = await Customer.find().lean();
+    
+    const headers = ['Name', 'Email', 'Phone', 'Age', 'City', 'Total Orders', 'Total Spent', 'Last Order Date', 'Churn Risk', 'Preferred Channel', 'Tags'];
+    const rows = customers.map(c => [
+      c.name, c.email, c.phone || '', c.age || '', c.city || '',
+      c.totalOrders, c.totalSpent, c.lastOrderDate ? new Date(c.lastOrderDate).toISOString().split('T')[0] : '',
+      c.digitalTwin?.churnRisk || '', c.digitalTwin?.preferredChannel || '',
+      (c.tags || []).join('; ')
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=customers_export.csv');
+    res.send(csv);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Export campaign report as CSV.
+ * GET /api/ai/export/campaign/:id
+ */
+exports.exportCampaignCSV = async (req, res, next) => {
+  try {
+    const Campaign = require('../models/Campaign');
+    const Message = require('../models/Message');
+
+    const campaign = await Campaign.findById(req.params.id);
+    if (!campaign) throw new AppError('Campaign not found', 404);
+
+    const messages = await Message.find({ campaignId: campaign._id })
+      .populate('customerId', 'name email phone')
+      .lean();
+
+    let csvData = 'Message ID,Customer Name,Customer Email,Channel,Status,Sent At\n';
+    for (const msg of messages) {
+      const c = msg.customerId || {};
+      const sentAt = msg.sentAt ? msg.sentAt.toISOString() : '';
+      csvData += `"${msg._id}","${c.name || ''}","${c.email || ''}","${msg.channel}","${msg.status}","${sentAt}"\n`;
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=campaign_${req.params.id}_report.csv`);
+    res.send(csvData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get active anomalies for the dashboard.
+ * GET /api/ai/anomalies
+ */
+exports.getAnomalies = async (req, res, next) => {
+  try {
+    const Anomaly = require('../models/Anomaly');
+    const anomalies = await Anomaly.find({ resolved: false })
+      .populate('campaignId', 'name channel')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    res.json({ success: true, data: anomalies });
+  } catch (error) {
+    next(error);
+  }
+};

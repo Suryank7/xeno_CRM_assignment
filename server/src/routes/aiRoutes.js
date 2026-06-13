@@ -12,10 +12,20 @@ const {
   getLearnings,
   getOpportunities,
   getPersonas,
+  executiveBrief,
+  exportCustomersCSV,
+  exportCampaignCSV,
+  getAnomalies,
 } = require('../controllers/aiController');
 
 // Core chat copilot
 router.post('/chat', chat);
+
+// Executive Briefing — AI-generated business health snapshot
+router.get('/executive-brief', executiveBrief);
+
+// Anomaly Detection
+router.get('/anomalies', getAnomalies);
 
 // Feature 1: Opportunity discovery
 router.post('/discover-opportunities', discoverOpportunities);
@@ -41,4 +51,9 @@ router.post('/autonomous-plan', autonomousPlan);
 router.post('/learn', learn);
 router.get('/learnings', getLearnings);
 
+// CSV Data Exports
+router.get('/export/customers', exportCustomersCSV);
+router.get('/export/campaign/:id', exportCampaignCSV);
+
 module.exports = router;
+

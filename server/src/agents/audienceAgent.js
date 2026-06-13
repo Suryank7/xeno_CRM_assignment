@@ -46,14 +46,19 @@ IMPORTANT:
  *
  * @param {string} naturalLanguageQuery - e.g. "Customers who haven't bought in 60 days"
  * @param {Object} customerStats - optional aggregate stats for context
+ * @param {Array} pastLearnings - past campaign learnings for smarter decisions
  * @returns {Object} Structured segment definition
  */
-async function run(naturalLanguageQuery, customerStats = {}) {
+async function run(naturalLanguageQuery, customerStats = {}, pastLearnings = []) {
   const context = customerStats.totalCustomers
     ? `\nCurrent database has ${customerStats.totalCustomers} customers, ${customerStats.activeCustomers} active, ${customerStats.inactiveCustomers} inactive. Average spend: ₹${customerStats.avgSpent}.`
     : '';
 
-  const userMessage = `Create an audience segment for: "${naturalLanguageQuery}"${context}`;
+  const learningContext = pastLearnings.length > 0
+    ? `\n\nPAST CAMPAIGN LEARNINGS (use these to make smarter decisions):\n${pastLearnings.slice(0, 3).map((l, i) => `${i + 1}. Segment: ${l.segmentType}, Channel: ${l.channelUsed}, Score: ${l.performanceScore}/100 — ${l.insights?.slice(0, 2).join('; ')}`).join('\n')}`
+    : '';
+
+  const userMessage = `Create an audience segment for: "${naturalLanguageQuery}"${context}${learningContext}`;
 
   return generateJSON(SYSTEM_PROMPT, userMessage);
 }

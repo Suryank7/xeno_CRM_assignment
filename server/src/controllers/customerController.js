@@ -98,14 +98,23 @@ exports.getCustomers = async (req, res, next) => {
 exports.getCustomerById = async (req, res, next) => {
   try {
     const customer = await Customer.findById(req.params.id).lean();
-    if (!customer) throw new AppError('Customer not found', 404);
+    if (!customer) {
+      throw new AppError('Customer not found', 404);
+    }
 
+    const Order = require('../models/Order');
     const orders = await Order.find({ customerId: customer._id })
       .sort({ orderDate: -1 })
       .limit(20)
       .lean();
 
-    res.json({ success: true, data: { ...customer, orders } });
+    const Ticket = require('../models/Ticket');
+    const tickets = await Ticket.find({ customerId: req.params.id }).sort({ createdAt: -1 }).lean();
+    
+    customer.orders = orders;
+    customer.tickets = tickets;
+
+    res.json({ success: true, data: customer });
   } catch (error) {
     next(error);
   }
@@ -120,8 +129,12 @@ exports.getCustomerStats = async (req, res, next) => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(now - 90 * 24 * 60 * 60 * 1000);
+    
+    // For WoW trends
+    const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const twoWeeksAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
 
-    const [total, active, inactive, stats] = await Promise.all([
+    const [total, active, inactive, stats, totalLastWeek, totalTwoWeeksAgo, revenueLastWeek, revenueTwoWeeksAgo] = await Promise.all([
       Customer.countDocuments(),
       Customer.countDocuments({ lastOrderDate: { $gte: thirtyDaysAgo } }),
       Customer.countDocuments({ lastOrderDate: { $lt: ninetyDaysAgo } }),
@@ -135,7 +148,19 @@ exports.getCustomerStats = async (req, res, next) => {
           },
         },
       ]),
+      Customer.countDocuments({ createdAt: { $lte: oneWeekAgo } }),
+      Customer.countDocuments({ createdAt: { $lte: twoWeeksAgo } }),
+      Order.aggregate([{ $match: { orderDate: { $gte: oneWeekAgo, $lte: now } } }, { $group: { _id: null, sum: { $sum: '$amount' } } }]),
+      Order.aggregate([{ $match: { orderDate: { $gte: twoWeeksAgo, $lt: oneWeekAgo } } }, { $group: { _id: null, sum: { $sum: '$amount' } } }])
     ]);
+
+    // Calculate Trend Percentages
+    const calcTrend = (current, previous) => previous > 0 ? Math.round(((current - previous) / previous) * 100) : 0;
+    
+    const customersWoW = calcTrend(total, totalLastWeek);
+    const revCurrent = revenueLastWeek[0]?.sum || 0;
+    const revPast = revenueTwoWeeksAgo[0]?.sum || 0;
+    const revenueWoW = calcTrend(revCurrent, revPast);
 
     res.json({
       success: true,
@@ -146,7 +171,34 @@ exports.getCustomerStats = async (req, res, next) => {
         avgSpent: Math.round(stats[0]?.avgSpent || 0),
         avgOrders: Math.round((stats[0]?.avgOrders || 0) * 10) / 10,
         totalRevenue: Math.round(stats[0]?.totalRevenue || 0),
+        trends: {
+          customersWoW,
+          revenueWoW,
+          activeWoW: 5, // Mocked for UI demo
+          inactiveWoW: -2 // Mocked for UI demo
+        }
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get messages sent to a specific customer.
+ * GET /api/customers/:id/messages
+ */
+exports.getCustomerMessages = async (req, res, next) => {
+  try {
+    const Message = require('../models/Message');
+    const messages = await Message.find({ customerId: req.params.id })
+      .populate('campaignId', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({
+      success: true,
+      data: messages,
     });
   } catch (error) {
     next(error);

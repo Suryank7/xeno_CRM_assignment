@@ -9,7 +9,10 @@ const segmentRoutes = require('./routes/segmentRoutes');
 const campaignRoutes = require('./routes/campaignRoutes');
 const receiptRoutes = require('./routes/receiptRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const authRoutes = require('./routes/authRoutes');
+const ticketRoutes = require('./routes/ticketRoutes');
 const { initGemini } = require('./services/geminiService');
+const { protect } = require('./middleware/authMiddleware');
 
 const app = express();
 
@@ -17,6 +20,9 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+const { auditLogger } = require('./middleware/auditLogger');
+app.use(auditLogger);
 
 // Initialize Gemini AI
 initGemini();
@@ -27,13 +33,15 @@ app.get('/health', (req, res) => {
 });
 
 // --- API Routes ---
-app.use('/api/customers', customerRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/segments', segmentRoutes);
-app.use('/api/campaigns', campaignRoutes);
-app.use('/api/receipt', receiptRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/customers', protect, customerRoutes);
+app.use('/api/orders', protect, orderRoutes);
+app.use('/api/segments', protect, segmentRoutes);
+app.use('/api/campaigns', protect, campaignRoutes);
+app.use('/api/tickets', protect, ticketRoutes);
+app.use('/api/receipt', receiptRoutes); // Open webhook
 
-app.use('/api/ai', aiRoutes);
+app.use('/api/ai', protect, aiRoutes);
 
 // --- 404 Handler ---
 app.use((req, res) => {

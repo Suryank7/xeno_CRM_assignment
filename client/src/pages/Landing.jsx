@@ -17,8 +17,34 @@ const Star4Small = ({ size = 16, style }) => (
 
 export default function Landing() {
   const navigate = useNavigate();
+  const isAuthenticated = localStorage.getItem('token') !== null;
+  const handleAuthRedirect = () => navigate(isAuthenticated ? '/dashboard' : '/login');
+  
   const [openFaq, setOpenFaq] = useState(0);
   const [billingYearly, setBillingYearly] = useState(true);
+  
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+
+  const testimonials = [
+    { text: "I've had the pleasure of working with Xeno Pulse for the past year, and I can confidently say that they have been instrumental in the success of our marketing initiatives. As a D2C brand, we needed a platform that could not only segment our audience but also grow with us as we scale. Xeno Pulse has exceeded our expectations on every front.", name: "Alex Fernandes", role: "CMO, RetailBrand" },
+    { text: "The autonomous capabilities of Xeno Pulse are simply unmatched. Our retention campaigns are now running on autopilot, finding the right customers before they churn. It's like having an entire data science team working around the clock.", name: "Sarah Jenkins", role: "Head of Growth, TrendSet" },
+    { text: "Since migrating to Xeno Pulse, our ROAS has jumped by 32%. The AI actually learns which messages work best on which channels. We no longer guess where to spend our marketing budget—the system decides and executes flawlessly.", name: "David Chen", role: "E-commerce Director, Aura" },
+    { text: "Implementation took just two days. The moment we uploaded our CSV, the AI identified over 10,000 hidden opportunities in our dormant user base. The resulting campaign was our highest grossing this quarter.", name: "Priya Sharma", role: "Founder, LuxeLife" },
+    { text: "We used to spend hours manually creating segments and setting up multi-channel drips. Now we just define the goal, and Xeno Pulse's agents handle everything from targeting to delivery. A true game-changer.", name: "Michael Ross", role: "VP Marketing, TechGear" }
+  ];
+
+  const handleNextTestimonial = () => setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+  const handlePrevTestimonial = () => setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+
+  const handleSubscribe = () => {
+    if (email) {
+      setSubscribed(true);
+      setTimeout(() => setSubscribed(false), 3000);
+      setEmail('');
+    }
+  };
 
   /* animated counters */
   const [counts, setCounts] = useState({ a: 0, b: 0, c: 0, d: 0 });
@@ -78,8 +104,8 @@ export default function Landing() {
           </ul>
 
           <div className="lp-nav-cta">
-            <button className="lp-btn lp-btn-ghost" onClick={() => navigate('/dashboard')}>Log In</button>
-            <button className="lp-btn lp-btn-primary" onClick={() => navigate('/dashboard')}>Sign Up</button>
+            <button className="lp-btn lp-btn-ghost" onClick={handleAuthRedirect}>{isAuthenticated ? 'Dashboard' : 'Log In'}</button>
+            {!isAuthenticated && <button className="lp-btn lp-btn-primary" onClick={handleAuthRedirect}>Sign Up</button>}
           </div>
         </div>
       </nav>
@@ -100,10 +126,10 @@ export default function Landing() {
               discovers high-value segments, and runs personalized campaigns — all powered by AI.
             </p>
             <div className="lp-hero-btns">
-              <button className="lp-btn lp-btn-primary lp-btn-lg" onClick={() => navigate('/dashboard')}>
-                Get Started Now
+              <button className="lp-btn lp-btn-primary lp-btn-lg" onClick={handleAuthRedirect}>
+                {isAuthenticated ? 'Go to Dashboard' : 'Get Started Now'}
               </button>
-              <button className="lp-btn lp-btn-outline lp-btn-lg" onClick={() => navigate('/dashboard')}>
+              <button className="lp-btn lp-btn-outline lp-btn-lg" onClick={() => navigate('/contact')}>
                 Contact Us
               </button>
             </div>
@@ -339,7 +365,7 @@ export default function Landing() {
               <li><span className="lp-check-dot green"></span>Trusted by data-driven D2C brands worldwide.</li>
               <li><span className="lp-check-dot purple"></span>Self-learning AI optimization loop.</li>
             </ul>
-            <button className="lp-btn lp-btn-primary lp-btn-lg" style={{ marginTop: 32 }} onClick={() => navigate('/dashboard')}>
+            <button className="lp-btn lp-btn-primary lp-btn-lg" style={{ marginTop: 32 }} onClick={handleAuthRedirect}>
               Discover More
             </button>
           </div>
@@ -363,7 +389,7 @@ export default function Landing() {
               <div><span className="lp-check-dot green"></span>Natural Language</div>
               <div><span className="lp-check-dot green"></span>Ultimate Support</div>
             </div>
-            <button className="lp-btn lp-btn-primary lp-btn-lg" style={{ marginTop: 32 }} onClick={() => navigate('/dashboard')}>
+            <button className="lp-btn lp-btn-primary lp-btn-lg" style={{ marginTop: 32 }} onClick={handleAuthRedirect}>
               Get Started
             </button>
           </div>
@@ -500,27 +526,23 @@ export default function Landing() {
           <span className="lp-pill lp-pill-sm">Testimonials</span>
           <h2 className="lp-heading">What Our Clients Say?</h2>
 
-          <div className="lp-testimonial-card">
+          <div className="lp-testimonial-card" style={{ minHeight: 320, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div className="lp-stars">{'★★★★★'}</div>
-            <p className="lp-testimonial-text">
-              "I've had the pleasure of working with Xeno Pulse for the past year, and I can
-              confidently say that they have been instrumental in the success of our marketing
-              initiatives. As a D2C brand, we needed a platform that could not only segment our
-              audience but also grow with us as we scale. Xeno Pulse has exceeded our expectations
-              on every front."
+            <p className="lp-testimonial-text" style={{ minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              "{testimonials[currentTestimonial].text}"
             </p>
             <div className="lp-avatars-row">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <img key={i} src={`https://i.pravatar.cc/60?u=user${i}`} alt="" className="lp-avatar-small" loading="lazy" />
+              {testimonials.map((_, i) => (
+                <img key={i} src={`https://i.pravatar.cc/60?u=user${i + 1}`} alt="" className={`lp-avatar-small ${currentTestimonial === i ? 'active' : ''}`} style={{ opacity: currentTestimonial === i ? 1 : 0.4, border: currentTestimonial === i ? '2px solid #7C3AED' : 'none', transition: '0.3s' }} loading="lazy" />
               ))}
             </div>
             <div className="lp-author-info">
-              <h4>Alex Fernandes</h4>
-              <span>CMO, RetailBrand</span>
+              <h4>{testimonials[currentTestimonial].name}</h4>
+              <span>{testimonials[currentTestimonial].role}</span>
             </div>
             <div className="lp-testimonial-nav">
-              <button className="lp-tnav">←</button>
-              <button className="lp-tnav lp-tnav-active">→</button>
+              <button className="lp-tnav" onClick={handlePrevTestimonial}>←</button>
+              <button className="lp-tnav" onClick={handleNextTestimonial}>→</button>
             </div>
           </div>
         </div>
@@ -555,7 +577,7 @@ export default function Landing() {
                 <li className="no">Autonomous execution</li>
                 <li className="no">24/7 Customer support</li>
               </ul>
-              <button className="lp-btn lp-btn-outline-purple lp-btn-full" onClick={() => navigate('/dashboard')}>Choose Your Plan</button>
+              <button className="lp-btn lp-btn-outline-purple lp-btn-full" onClick={() => navigate('/payment')}>Choose Your Plan</button>
             </div>
 
             <div className="lp-price-card lp-price-featured">
@@ -569,7 +591,7 @@ export default function Landing() {
                 <li className="yes">Full Autonomous AI Loop</li>
                 <li className="yes">24/7 Customer support</li>
               </ul>
-              <button className="lp-btn lp-btn-dark lp-btn-full" onClick={() => navigate('/dashboard')}>Choose Your Plan</button>
+              <button className="lp-btn lp-btn-dark lp-btn-full" onClick={() => navigate('/payment')}>Choose Your Plan</button>
             </div>
 
             <div className="lp-price-card">
@@ -583,7 +605,7 @@ export default function Landing() {
                 <li className="yes">SLA guarantee</li>
                 <li className="yes">24/7 Priority support</li>
               </ul>
-              <button className="lp-btn lp-btn-outline-purple lp-btn-full" onClick={() => navigate('/dashboard')}>Choose Your Plan</button>
+              <button className="lp-btn lp-btn-outline-purple lp-btn-full" onClick={() => navigate('/payment')}>Choose Your Plan</button>
             </div>
           </div>
         </div>
@@ -652,13 +674,19 @@ export default function Landing() {
             <h3>Subscribe Our Newsletter</h3>
             <p>Get started for 1 Month free trial. No Purchase required.</p>
           </div>
-          <div className="lp-nl-form">
-            <div className="lp-nl-input">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              <input type="email" placeholder="Email Address" />
+          {subscribed ? (
+            <div style={{ padding: '16px 24px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', color: '#10b981', borderRadius: 12, fontWeight: 600 }}>
+              Thanks! You're subscribed to Xeno Pulse updates.
             </div>
-            <button className="lp-btn lp-btn-primary">Subscribe Now</button>
-          </div>
+          ) : (
+            <div className="lp-nl-form">
+              <div className="lp-nl-input">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <button className="lp-btn lp-btn-primary" onClick={handleSubscribe}>Subscribe Now</button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -686,41 +714,41 @@ export default function Landing() {
 
           <div className="lp-footer-col">
             <h5>Product</h5>
-            <a href="#">Product Tour</a>
-            <a href="#">Analytics</a>
-            <a href="#">Product Overview</a>
-            <a href="#">What's New</a>
-            <a href="#">Templates</a>
+            <a href="https://www.getxeno.com/product" target="_blank" rel="noreferrer">Product Tour</a>
+            <a href="https://www.getxeno.com/features" target="_blank" rel="noreferrer">Analytics</a>
+            <a href="https://www.getxeno.com/about" target="_blank" rel="noreferrer">Product Overview</a>
+            <a href="https://www.getxeno.com/blog" target="_blank" rel="noreferrer">What's New</a>
+            <a href="https://www.getxeno.com/contact" target="_blank" rel="noreferrer">Templates</a>
           </div>
           <div className="lp-footer-col">
             <h5>Company</h5>
-            <a href="#">What we Offer</a>
-            <a href="#">Our Story</a>
-            <a href="#">Latest Posts</a>
-            <a href="#">Help Center</a>
-            <a href="#">Our Partners</a>
+            <a href="https://www.getxeno.com/" target="_blank" rel="noreferrer">What we Offer</a>
+            <a href="https://www.getxeno.com/about" target="_blank" rel="noreferrer">Our Story</a>
+            <a href="https://www.getxeno.com/blog" target="_blank" rel="noreferrer">Latest Posts</a>
+            <a href="https://www.getxeno.com/contact" target="_blank" rel="noreferrer">Help Center</a>
+            <a href="https://www.getxeno.com/partners" target="_blank" rel="noreferrer">Our Partners</a>
           </div>
           <div className="lp-footer-col">
             <h5>Resources</h5>
-            <a href="#">Blog</a>
-            <a href="#">Pricing</a>
-            <a href="#">FAQ</a>
-            <a href="#">Events</a>
-            <a href="#">Ebook & Guide</a>
+            <a href="https://www.getxeno.com/blog" target="_blank" rel="noreferrer">Blog</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#how">FAQ</a>
+            <a href="https://www.getxeno.com/events" target="_blank" rel="noreferrer">Events</a>
+            <a href="https://www.getxeno.com/ebooks" target="_blank" rel="noreferrer">Ebook & Guide</a>
           </div>
           <div className="lp-footer-col">
             <h5>Services</h5>
-            <a href="#">Web Page Design</a>
-            <a href="#">WordPress Theme</a>
-            <a href="#">Web Application</a>
-            <a href="#">iOS Application</a>
-            <a href="#">UX Research</a>
+            <a href="https://www.getxeno.com/" target="_blank" rel="noreferrer">AI Campaign Manager</a>
+            <a href="https://www.getxeno.com/" target="_blank" rel="noreferrer">Data Analytics</a>
+            <a href="https://www.getxeno.com/" target="_blank" rel="noreferrer">Customer Intelligence</a>
+            <a href="https://www.getxeno.com/" target="_blank" rel="noreferrer">Automation</a>
+            <a href="https://www.getxeno.com/" target="_blank" rel="noreferrer">Integrations</a>
           </div>
         </div>
 
         <div className="lp-copyright">
           <div className="lp-wrap">
-            Copyright © 2025 <a href="#">Xeno Pulse</a>. All Rights Reserved.
+            Copyright © 2026 <a href="https://www.getxeno.com/" target="_blank" rel="noreferrer">Xeno Pulse</a>. All Rights Reserved.
           </div>
         </div>
       </footer>

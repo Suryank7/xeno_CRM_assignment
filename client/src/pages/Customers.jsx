@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Search, Grid3X3, List, Filter, TrendingUp, TrendingDown, Users } from 'lucide-react';
+import { Upload, Download, Search, Grid3X3, List, Filter, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import Header from '../components/layout/Header';
-import { getCustomers, getCustomerStats, uploadCustomers } from '../services/api';
+import { getCustomers, getCustomerStats, uploadCustomers, exportCustomersCSV } from '../services/api';
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -13,6 +13,7 @@ export default function Customers() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({});
   const [uploading, setUploading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const fileRef = useRef();
   const navigate = useNavigate();
 
@@ -51,6 +52,23 @@ export default function Customers() {
     e.target.value = '';
   }
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const response = await exportCustomersCSV();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'customers_export.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert('❌ Export failed: ' + err.message);
+    }
+    setExporting(false);
+  }
+
   function getInitials(name) {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
   }
@@ -64,10 +82,16 @@ export default function Customers() {
   return (
     <>
       <Header title="Customers" subtitle={`${stats.totalCustomers || 0} total customers`}>
-        <button className="btn btn-primary btn-sm" onClick={() => fileRef.current?.click()}>
-          <Upload size={16} />
-          {uploading ? 'Uploading...' : 'Upload CSV'}
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-secondary btn-sm" onClick={handleExport} disabled={exporting}>
+            <Download size={16} />
+            {exporting ? 'Exporting...' : 'Export CSV'}
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => fileRef.current?.click()}>
+            <Upload size={16} />
+            {uploading ? 'Uploading...' : 'Upload CSV'}
+          </button>
+        </div>
         <input ref={fileRef} type="file" accept=".csv" onChange={handleUpload} hidden />
       </Header>
 

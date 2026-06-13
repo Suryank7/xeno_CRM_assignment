@@ -14,6 +14,8 @@ const messageSchema = new mongoose.Schema(
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
     channel: { type: String, enum: ['whatsapp', 'sms', 'email'], required: true },
     content: { type: String, required: true },
+    variantId: { type: String }, // "A", "B", etc. for A/B testing
+
 
     // Current status in the delivery lifecycle
     status: {

@@ -6,6 +6,7 @@ const {
   getCustomers,
   getCustomerById,
   getCustomerStats,
+  getCustomerMessages,
 } = require('../controllers/customerController');
 
 // Multer configured for memory storage (CSV stays in buffer, never hits disk)
@@ -15,5 +16,6 @@ router.post('/upload', upload.single('file'), uploadCustomers);
 router.get('/stats', getCustomerStats); // Must be before /:id to avoid conflict
 router.get('/', getCustomers);
 router.get('/:id', getCustomerById);
+router.get('/:id/messages', getCustomerMessages);
 
 module.exports = router;

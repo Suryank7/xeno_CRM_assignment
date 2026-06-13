@@ -40,7 +40,10 @@ async function generateJSON(systemPrompt, userMessage) {
       maxOutputTokens: 4096,
       responseMimeType: 'application/json',
     },
-    systemInstruction: systemPrompt,
+    systemInstruction: {
+      role: 'system',
+      parts: [{ text: systemPrompt }],
+    },
   });
 
   const result = await chat.sendMessage(userMessage);
@@ -71,7 +74,10 @@ async function generateText(systemPrompt, userMessage) {
       topP: 0.9,
       maxOutputTokens: 2048,
     },
-    systemInstruction: systemPrompt,
+    systemInstruction: {
+      role: 'system',
+      parts: [{ text: systemPrompt }],
+    },
   });
 
   const result = await chat.sendMessage(userMessage);

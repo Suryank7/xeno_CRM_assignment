@@ -50,15 +50,20 @@ GUIDELINES:
  * @param {string} goal - Marketing goal, e.g. "Bring back inactive customers"
  * @param {Object} audienceInfo - Segment name, size, characteristics
  * @param {string} channel - "whatsapp", "sms", or "email"
+ * @param {Array} pastLearnings - past campaign learnings for better copy
  * @returns {Object} Campaign with 4 message variants
  */
-async function run(goal, audienceInfo, channel = 'whatsapp') {
+async function run(goal, audienceInfo, channel = 'whatsapp', pastLearnings = []) {
+  const learningContext = pastLearnings.length > 0
+    ? `\n\nPAST CAMPAIGN LEARNINGS (apply these insights to improve messages):\n${pastLearnings.slice(0, 3).map((l, i) => `${i + 1}. ${l.channelUsed} campaign scored ${l.performanceScore}/100 — ${l.recommendations?.slice(0, 2).join('; ')}`).join('\n')}`
+    : '';
+
   const userMessage = `
 Goal: ${goal}
 Channel: ${channel}
 Audience: ${audienceInfo.segmentName || 'Target Segment'} (${audienceInfo.audienceSize || 'unknown'} customers)
 Audience Description: ${audienceInfo.description || 'No additional description'}
-
+${learningContext}
 Create 4 message variants for this campaign.`;
 
   return generateJSON(SYSTEM_PROMPT, userMessage);
