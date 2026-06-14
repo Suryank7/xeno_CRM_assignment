@@ -13,32 +13,67 @@ function getMockJSONFallback(systemPrompt, userMessage) {
   
   const lowerMsg = userMessage.toLowerCase();
   if (systemPrompt.includes('Segment') || lowerMsg.includes('spend') || lowerMsg.includes('purchasing') || systemPrompt.includes('Audience')) {
-    let spendAmount = 5000;
-    
     // Extract the actual query inside quotes to avoid reading numbers from the database context
     const userQueryMatch = userMessage.match(/"([^"]+)"/);
     const actualQuery = userQueryMatch ? userQueryMatch[1].toLowerCase() : lowerMsg;
     
-    const isLowest = actualQuery.includes('lowest') || actualQuery.includes('least') || actualQuery.includes('minimum');
-    const isHighest = actualQuery.includes('highest') || actualQuery.includes('most') || actualQuery.includes('maximum');
-    const isLessThan = actualQuery.includes('less') || actualQuery.includes('under') || actualQuery.includes('below') || isLowest;
+    let segmentName = "Engaged Customers";
+    let description = "Customers targeted based on engagement.";
+    let rules = {};
+    let reasoning = ["Audience matched standard engagement criteria."];
 
+    // Number extraction for generic spend
     const numberMatch = actualQuery.match(/\b\d+\b/);
-    if (numberMatch) {
-      spendAmount = parseInt(numberMatch[0], 10);
+    const parsedNumber = numberMatch ? parseInt(numberMatch[0], 10) : null;
+
+    if (actualQuery.includes('churn') || actualQuery.includes('win back') || actualQuery.includes('risk')) {
+      segmentName = "High Risk Churners";
+      description = "Customers showing strong signals of churning.";
+      rules = { "digitalTwin.churnRisk": "high" };
+      reasoning = ["Detected high churn probability", "Last engagement was below baseline"];
+    } else if (actualQuery.includes('vip') || actualQuery.includes('highest') || actualQuery.includes('top')) {
+      segmentName = "VIP Elite Spenders";
+      description = "The highest value customers in the database.";
+      rules = { tags: "vip", totalSpent: { $gte: parsedNumber > 100 ? parsedNumber : 15000 } };
+      reasoning = ["Customer belongs to top 10% spenders", "High lifetime value"];
+    } else if (actualQuery.includes('inactive') || actualQuery.includes('dormant') || actualQuery.includes('reactivate')) {
+      segmentName = "Dormant Users (90d+)";
+      description = "Customers who haven't ordered in over 90 days.";
+      rules = { daysSinceLastOrder: { $gt: 90 } };
+      reasoning = ["No purchase activity in recent quarter", "High probability of attrition"];
+    } else if (actualQuery.includes('young') || actualQuery.includes('gen z') || actualQuery.includes('student')) {
+      segmentName = "Young Demographic (<30)";
+      description = "Targeting younger demographic users.";
+      rules = { age: { $lt: 30 } };
+      reasoning = ["Age matches Gen-Z / Millennial bracket", "High affinity for trendy categories"];
+    } else if (actualQuery.includes('frequent') || actualQuery.includes('active') || actualQuery.includes('loyal')) {
+      segmentName = "Frequent Active Buyers";
+      description = "Customers with high order frequency.";
+      rules = { totalOrders: { $gte: parsedNumber || 5 } };
+      reasoning = ["Consistent purchase history", "High brand loyalty"];
     } else {
-      if (isLowest) spendAmount = 1000;
-      else if (isHighest) spendAmount = 15000;
+      // Fallback for generic spend or random queries
+      const isLowest = actualQuery.includes('lowest') || actualQuery.includes('least') || actualQuery.includes('minimum');
+      const isLessThan = actualQuery.includes('less') || actualQuery.includes('under') || actualQuery.includes('below') || isLowest;
+      
+      let spendAmount = parsedNumber || (isLowest ? 1000 : 5000);
+      // Prevent silly "Spenders over 10" from percentages
+      if (spendAmount < 50 && actualQuery.includes('percent')) spendAmount = 5000;
+
+      const operator = isLessThan ? '$lte' : '$gte';
+      const direction = isLessThan ? 'under' : 'over';
+
+      segmentName = `Spenders ${direction} ₹${spendAmount}`;
+      description = `Customers who have purchased ${direction} ₹${spendAmount}.`;
+      rules = { totalSpent: { [operator]: spendAmount } };
+      reasoning = ["Analyzed purchase threshold", "Segmented based on value"];
     }
 
-    const operator = isLessThan ? '$lte' : '$gte';
-    const direction = isLessThan ? 'under' : 'over';
-
     return {
-      segmentName: `Spenders ${direction} ₹${spendAmount}`,
-      description: `Customers who have purchased ${direction} ₹${spendAmount}.`,
-      rules: { totalSpent: { [operator]: spendAmount } },
-      explanation: { reasoning: ["Analyzed purchase threshold", "Segmented based on value"], confidence: 90 }
+      segmentName,
+      description,
+      rules,
+      explanation: { reasoning, confidence: 92 }
     };
   } else {
     return {
