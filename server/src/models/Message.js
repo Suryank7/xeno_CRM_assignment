@@ -12,7 +12,7 @@ const messageSchema = new mongoose.Schema(
   {
     campaignId: { type: mongoose.Schema.Types.ObjectId, ref: 'Campaign', required: true },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
-    channel: { type: String, enum: ['whatsapp', 'sms', 'email'], required: true },
+    channel: { type: String, enum: ['whatsapp', 'sms', 'email', 'rcs'], required: true },
     content: { type: String, required: true },
     variantId: { type: String }, // "A", "B", etc. for A/B testing
 

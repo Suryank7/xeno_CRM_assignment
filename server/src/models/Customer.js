@@ -15,7 +15,7 @@ const customerSchema = new mongoose.Schema(
     // Feature 8: Customer Digital Twin — AI-generated behavioral profile
     digitalTwin: {
       purchaseProbability: { type: Number, min: 0, max: 100 },
-      preferredChannel: { type: String, enum: ['whatsapp', 'sms', 'email', null], default: null },
+      preferredChannel: { type: String, enum: ['whatsapp', 'sms', 'email', 'rcs', null], default: null },
       likelyPurchaseWindow: { type: String },
       discountSensitivity: { type: String, enum: ['low', 'medium', 'high', null], default: null },
       churnRisk: { type: String, enum: ['low', 'medium', 'high', null], default: null },

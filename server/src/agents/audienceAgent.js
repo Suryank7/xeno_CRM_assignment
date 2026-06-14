@@ -15,7 +15,7 @@ CUSTOMER DATA SCHEMA:
 - lastOrderDate (Date) — most recent order date
 - tags (Array of String) — e.g. "vip", "frequent", "inactive", "young", "coffee", "electronics"
 - digitalTwin.churnRisk (String) — "low", "medium", "high"
-- digitalTwin.preferredChannel (String) — "whatsapp", "sms", "email"
+- digitalTwin.preferredChannel (String) — "whatsapp", "sms", "email", "rcs"
 - digitalTwin.discountSensitivity (String) — "low", "medium", "high"
 
 SPECIAL KEY:

@@ -15,7 +15,7 @@ const campaignSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     segmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Segment', required: true },
-    channel: { type: String, enum: ['whatsapp', 'sms', 'email'], required: true },
+    channel: { type: String, enum: ['whatsapp', 'sms', 'email', 'rcs'], required: true },
     messageTemplate: { type: String, required: true },
 
     // Feature 6: Message Tournament — AI-generated variants

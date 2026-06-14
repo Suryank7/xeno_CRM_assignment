@@ -8,6 +8,7 @@ AVAILABLE CHANNELS:
 - whatsapp: High open rates (70-85%), best for young audiences, casual/urgent messages
 - sms: Medium open rates (40-55%), best for time-sensitive offers, older demographics
 - email: Lower open rates (15-30%), best for detailed content, professional tone, promotions with images
+- rcs: High engagement, interactive rich media, best for modern Android users and dynamic product carousels
 
 RESPOND WITH THIS EXACT JSON STRUCTURE:
 {
