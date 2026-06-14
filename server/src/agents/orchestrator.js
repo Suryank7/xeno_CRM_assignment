@@ -78,7 +78,9 @@ async function runGrowthPipeline(goal, customerStats = {}) {
       explanation: audience?.explanation || {},
     },
     channel: {
-      recommendation: channelPrediction?.recommendation || 'whatsapp',
+      recommendation: ['whatsapp', 'sms', 'email', 'rcs'].includes((channelPrediction?.recommendation || '').toLowerCase()) 
+        ? channelPrediction.recommendation.toLowerCase() 
+        : 'whatsapp',
       reasoning: channelPrediction?.reasoning || 'Default channel based on general performance.',
       predictions: channelPrediction?.predictions || [],
       explanation: channelPrediction?.explanation || {},
@@ -129,14 +131,15 @@ async function runAutonomousPlan(revenueGoal, customerStats = {}) {
   const totalPredictedRevenue = campaigns.reduce((sum, c) => {
     const avgConversion = c.channel?.predictions?.[0]?.conversion || 5;
     const avgOrderValue = customerStats.avgSpent || 1000;
-    return sum + (c.audience.audienceSize * (avgConversion / 100) * avgOrderValue);
+    const audienceSize = c.audience?.audienceSize || 0;
+    return sum + (audienceSize * (avgConversion / 100) * avgOrderValue);
   }, 0);
 
   return {
     revenueGoal,
     campaigns,
     totalPredictedRevenue: Math.round(totalPredictedRevenue),
-    summary: `Generated ${campaigns.length} campaigns targeting ${campaigns.reduce((s, c) => s + c.audience.audienceSize, 0)} customers. Predicted revenue: ₹${Math.round(totalPredictedRevenue).toLocaleString()}.`,
+    summary: `Generated ${campaigns.length} campaigns targeting ${campaigns.reduce((s, c) => s + (c.audience?.audienceSize || 0), 0)} customers. Predicted revenue: ₹${Math.round(totalPredictedRevenue).toLocaleString()}.`,
     ready: true,
   };
 }

@@ -77,11 +77,17 @@ export default function Copilot() {
       });
       const segmentId = segRes.data.data._id;
 
+      // Safely parse channel to ensure it matches the backend enum
+      let safeChannel = (plan.channel?.recommendation || '').toLowerCase();
+      if (!['whatsapp', 'sms', 'email', 'rcs'].includes(safeChannel)) {
+        safeChannel = 'whatsapp';
+      }
+
       // 2. Then create the campaign
       const res = await createCampaign({
         name: plan.campaign?.name || plan.campaign?.campaignName || 'Smart AI Campaign',
         segmentId: segmentId,
-        channel: plan.channel?.recommendation || 'whatsapp',
+        channel: safeChannel,
         messageTemplate: plan.campaign?.variants?.[0]?.message || plan.campaign?.message || plan.campaign?.messageTemplate || 'Hi there! We have an exclusive offer for you.',
         messageVariants: plan.campaign?.variants || [],
         simulation: {
