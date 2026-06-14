@@ -83,6 +83,28 @@ The build process itself was deeply AI-native. Rather than hand-coding 6,000 row
 
 ---
 
+## 🛠️ Technology Stack Justification
+
+Every piece of the stack was chosen deliberately to maximize performance, scalability, and developer velocity:
+
+* **Frontend:** *React + Vite.* Chosen over Next.js because this is a highly interactive, state-heavy internal dashboard with no SEO requirements. Vite provides instant HMR and a significantly faster build pipeline.
+* **Backend:** *Node.js + Express.* The asynchronous nature of Node.js is perfect for handling high-volume concurrent webhook receipts and I/O heavy database operations without blocking the thread.
+* **Database:** *MongoDB Atlas.* A NoSQL document database was explicitly chosen over SQL (PostgreSQL/MySQL) because customer telemetry data, product metadata, and dynamic AI JSON schemas require a highly flexible, schema-less structure.
+* **AI Orchestration:** *Multi-Agent Architecture.* Chosen over a single LLM prompt to constrain hallucinations and allow for deterministic, auditable JSON outputs.
+
+---
+
+## 🚧 Architectural Trade-offs & Scope Boundaries
+
+To ensure the highest quality of the core AI and orchestration systems within the time constraints, the following boundaries were deliberately established:
+
+* **Authentication Omitted:** Complex JWT auth flows were bypassed. This is an internal tool demo, and time was better spent on the multi-agent AI system.
+* **Single Tenant Focus:** Multi-tenancy was omitted. The system is designed to simulate a single enterprise brand to focus deeply on data relationships rather than account isolation.
+* **Simulated Telecom Gateway:** Instead of integrating a real paid provider like Twilio (which limits demo functionality), a dedicated Edge microservice was built to mock the complete asynchronous lifecycle of a real provider.
+* **Desktop-First Design:** The UI is heavily optimized for desktop. Complex B2B marketing orchestration and Sankey funnels require high-resolution viewports, making mobile responsiveness a non-priority for this release.
+
+---
+
 ## 🌐 Local Deployment Topology
 
 ### Prerequisites
