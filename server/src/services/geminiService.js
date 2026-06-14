@@ -11,15 +11,21 @@ function initGemini() {
 function getMockJSONFallback(systemPrompt, userMessage) {
   console.log('Executing Smart Mock Fallback...');
   
-  if (systemPrompt.includes('Segment') || userMessage.includes('spend') || userMessage.includes('purchasing')) {
-    let minSpend = 5000;
+  const lowerMsg = userMessage.toLowerCase();
+  if (systemPrompt.includes('Segment') || lowerMsg.includes('spend') || lowerMsg.includes('purchasing')) {
+    let spendAmount = 5000;
     const match = userMessage.match(/\b\d+\b/);
-    if (match) minSpend = parseInt(match[0], 10);
+    if (match) spendAmount = parseInt(match[0], 10);
+
+    // Make the mock even smarter: detect less than vs greater than
+    const isLessThan = lowerMsg.includes('less') || lowerMsg.includes('under') || lowerMsg.includes('below');
+    const operator = isLessThan ? '$lte' : '$gte';
+    const direction = isLessThan ? 'under' : 'over';
 
     return {
-      segmentName: `Spenders over ₹${minSpend}`,
-      description: `Customers who have purchased over ₹${minSpend}.`,
-      rules: { totalSpent: { $gte: minSpend } }
+      segmentName: `Spenders ${direction} ₹${spendAmount}`,
+      description: `Customers who have purchased ${direction} ₹${spendAmount}.`,
+      rules: { totalSpent: { [operator]: spendAmount } }
     };
   } else {
     return {
