@@ -41,7 +41,7 @@ Xeno Pulse is engineered as a scalable mono-repo encompassing three highly resil
 ![Technical Architecture](./docs/diagrams/technical_architecture_diagram.png)
 
 <details>
-  <summary><b>🔍 View Additional Architecture & Data Flow Diagrams</b></summary>
+  <summary><h3>📂 Click here to expand 4 additional System Diagrams (AI, ER, Sequence, User Flow)</h3></summary>
   <br/>
 
   ### System Sequence Diagram
