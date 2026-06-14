@@ -38,25 +38,25 @@ Xeno Pulse is built to effortlessly execute the four core pillars of retail grow
 
 Xeno Pulse is engineered as a scalable mono-repo encompassing three highly resilient micro-environments.
 
-```mermaid
-sequenceDiagram
-    participant UI as Vite/React Dashboard
-    participant Core as Express Core API
-    participant AI as Multi-Agent Orchestrator
-    participant DB as MongoDB Atlas
-    participant Edge as Channel Service (Mock Twilio)
+![Technical Architecture](./docs/diagrams/technical_architecture_diagram.png)
 
-    UI->>Core: "Re-engage Dormant Audience"
-    Core->>AI: Trigger Campaign Co-Pilot
-    AI-->>Core: JSON Schema: Target Segment, Copy Variants, Channel (WhatsApp/RCS)
-    Core->>DB: Deterministic Query (Sanitized)
-    DB-->>Core: 400 Targeted Shoppers
-    Core->>Edge: POST /send (Async Dispatch)
-    Edge-->>Core: HTTP 202 Accepted (Non-blocking)
-    Note over Edge: Simulates Network Latency & Drop-offs
-    Edge->>Core: POST /api/receipt (Webhook: Delivered)
-    Core->>UI: Update Live Sankey Funnel
-```
+<details>
+  <summary><b>🔍 View Additional Architecture & Data Flow Diagrams</b></summary>
+  <br/>
+
+  ### System Sequence Diagram
+  ![Sequence Diagram](./docs/diagrams/sequence_diagram.png)
+
+  ### AI Agent Orchestration
+  ![AI Architecture](./docs/diagrams/ai_architecture.png)
+
+  ### User Flow
+  ![User Flow](./docs/diagrams/user_flow_diagram.png)
+
+  ### Entity Relationship (ER) Diagram
+  ![ER Diagram](./docs/diagrams/er_diagram.png)
+
+</details>
 
 ### Scale Assumptions & Scope
 For the boundaries of this assessment, the system runs on a single Express instance connected to MongoDB Atlas. 
