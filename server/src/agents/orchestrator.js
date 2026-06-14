@@ -71,27 +71,27 @@ async function runGrowthPipeline(goal, customerStats = {}) {
   const plan = {
     goal,
     audience: {
-      segmentName: audience.segmentName,
-      description: audience.description,
-      rules: audience.rules,
+      segmentName: audience?.segmentName || 'Target Audience',
+      description: audience?.description || goal,
+      rules: audience?.rules || {},
       audienceSize,
-      explanation: audience.explanation,
+      explanation: audience?.explanation || {},
     },
     channel: {
-      recommendation: channelPrediction.recommendation,
-      reasoning: channelPrediction.reasoning,
-      predictions: channelPrediction.predictions,
-      explanation: channelPrediction.explanation,
+      recommendation: channelPrediction?.recommendation || 'whatsapp',
+      reasoning: channelPrediction?.reasoning || 'Default channel based on general performance.',
+      predictions: channelPrediction?.predictions || [],
+      explanation: channelPrediction?.explanation || {},
     },
     campaign: {
-      name: campaign.campaignName || campaign.name || 'AI Generated Campaign',
-      variants: campaign.variants,
-      recommendedVariant: campaign.recommendedVariant,
-      recommendationReason: campaign.recommendationReason,
-      explanation: campaign.explanation,
+      name: campaign?.campaignName || campaign?.name || 'AI Generated Campaign',
+      variants: campaign?.variants || [],
+      recommendedVariant: campaign?.recommendedVariant || 'A',
+      recommendationReason: campaign?.recommendationReason || campaign?.reasoning || 'AI Selection',
+      explanation: campaign?.explanation || {},
     },
     ready: true,
-    summary: `Found ${audienceSize} customers matching "${audience.segmentName}". Recommended ${channelPrediction.recommendation} with ${campaign.variants?.length || 0} message variants ready.`,
+    summary: `Found ${audienceSize} customers matching "${audience?.segmentName || 'Target'}". Recommended ${channelPrediction?.recommendation || 'whatsapp'} with ${campaign?.variants?.length || 0} message variants ready.`,
   };
 
   console.log(`  ✅ Pipeline complete: ${audienceSize} customers, ${channelPrediction.recommendation} channel`);
