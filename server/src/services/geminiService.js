@@ -12,20 +12,33 @@ function getMockJSONFallback(systemPrompt, userMessage) {
   console.log('Executing Smart Mock Fallback...');
   
   const lowerMsg = userMessage.toLowerCase();
-  if (systemPrompt.includes('Segment') || lowerMsg.includes('spend') || lowerMsg.includes('purchasing')) {
+  if (systemPrompt.includes('Segment') || lowerMsg.includes('spend') || lowerMsg.includes('purchasing') || systemPrompt.includes('Audience')) {
     let spendAmount = 5000;
-    const match = userMessage.match(/\b\d+\b/);
-    if (match) spendAmount = parseInt(match[0], 10);
+    
+    // Extract the actual query inside quotes to avoid reading numbers from the database context
+    const userQueryMatch = userMessage.match(/"([^"]+)"/);
+    const actualQuery = userQueryMatch ? userQueryMatch[1].toLowerCase() : lowerMsg;
+    
+    const isLowest = actualQuery.includes('lowest') || actualQuery.includes('least') || actualQuery.includes('minimum');
+    const isHighest = actualQuery.includes('highest') || actualQuery.includes('most') || actualQuery.includes('maximum');
+    const isLessThan = actualQuery.includes('less') || actualQuery.includes('under') || actualQuery.includes('below') || isLowest;
 
-    // Make the mock even smarter: detect less than vs greater than
-    const isLessThan = lowerMsg.includes('less') || lowerMsg.includes('under') || lowerMsg.includes('below');
+    const numberMatch = actualQuery.match(/\b\d+\b/);
+    if (numberMatch) {
+      spendAmount = parseInt(numberMatch[0], 10);
+    } else {
+      if (isLowest) spendAmount = 1000;
+      else if (isHighest) spendAmount = 15000;
+    }
+
     const operator = isLessThan ? '$lte' : '$gte';
     const direction = isLessThan ? 'under' : 'over';
 
     return {
       segmentName: `Spenders ${direction} ₹${spendAmount}`,
       description: `Customers who have purchased ${direction} ₹${spendAmount}.`,
-      rules: { totalSpent: { [operator]: spendAmount } }
+      rules: { totalSpent: { [operator]: spendAmount } },
+      explanation: { reasoning: ["Analyzed purchase threshold", "Segmented based on value"], confidence: 90 }
     };
   } else {
     return {

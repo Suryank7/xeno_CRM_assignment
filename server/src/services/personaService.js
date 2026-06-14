@@ -89,6 +89,7 @@ async function generatePersonas() {
       personaInfo = await generateJSON(PERSONA_PROMPT,
         `Cluster: Age ${cluster._id.ageGroup}, Spend ${cluster._id.spendTier}, ${cluster.count} customers, avg ₹${Math.round(cluster.avgSpend)} spend, avg ${Math.round(cluster.avgOrders * 10) / 10} orders, top cities: ${topCities.join(', ')}`
       );
+      if (!personaInfo || !personaInfo.name) throw new Error('Invalid persona structure');
     } catch {
       personaInfo = {
         name: `${cluster._id.ageGroup} ${cluster._id.spendTier} Spenders`,

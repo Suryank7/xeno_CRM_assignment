@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Upload, Download, Search, Grid3X3, List, Filter, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import Header from '../components/layout/Header';
 import { getCustomers, getCustomerStats, uploadCustomers, exportCustomersCSV } from '../services/api';
@@ -10,22 +10,38 @@ export default function Customers() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('grid'); // 'grid' or 'list'
   const [search, setSearch] = useState('');
+  const [filterMode, setFilterMode] = useState('all');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({});
   const [uploading, setUploading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const fileRef = useRef();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const q = new URLSearchParams(location.search).get('search');
+    if (q !== null && q !== search) {
+      setSearch(q);
+      setPage(1);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     loadData();
-  }, [page, search]);
+  }, [page, search, filterMode]);
 
   async function loadData() {
     setLoading(true);
     try {
       const [custRes, statsRes] = await Promise.all([
-        getCustomers({ page, limit: 20, search }),
+        getCustomers({ 
+          page, 
+          limit: 20, 
+          search,
+          churnRisk: filterMode === 'highRisk' ? 'high' : undefined,
+          minSpend: filterMode === 'vip' ? 10000 : undefined
+        }),
         getCustomerStats(),
       ]);
       setCustomers(custRes.data.data);
@@ -133,7 +149,16 @@ export default function Customers() {
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
             </div>
-            <button className="btn btn-secondary btn-sm"><Filter size={14} /> Filters</button>
+            <select 
+              className="btn btn-secondary btn-sm" 
+              style={{ padding: '6px 12px', border: '1px solid var(--border-color)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
+              value={filterMode}
+              onChange={(e) => { setFilterMode(e.target.value); setPage(1); }}
+            >
+              <option value="all">All Customers</option>
+              <option value="vip">VIP (Spend &gt; ₹10,000)</option>
+              <option value="highRisk">High Churn Risk</option>
+            </select>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
               <button
                 className={`btn btn-icon ${view === 'grid' ? 'btn-primary' : 'btn-ghost'}`}

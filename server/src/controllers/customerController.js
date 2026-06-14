@@ -71,6 +71,13 @@ exports.getCustomers = async (req, res, next) => {
         }
       : {};
 
+    if (req.query.churnRisk) {
+      filter['digitalTwin.churnRisk'] = req.query.churnRisk;
+    }
+    if (req.query.minSpend) {
+      filter.totalSpent = { $gte: parseInt(req.query.minSpend) };
+    }
+
     const [customers, total] = await Promise.all([
       Customer.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Customer.countDocuments(filter),
