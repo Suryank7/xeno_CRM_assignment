@@ -7,7 +7,9 @@ import api from '../services/api';
 export default function Support() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, open, resolved
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // all, open, in-progress, resolved, closed
+  const [priorityFilter, setPriorityFilter] = useState('all'); // all, low, medium, high, urgent
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,22 +26,49 @@ export default function Support() {
     setLoading(false);
   }
 
-  const filteredTickets = tickets.filter(t => filter === 'all' ? true : t.status === filter);
+  const filteredTickets = tickets.filter(t => {
+    const matchesStatus = statusFilter === 'all' ? true : t.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' ? true : t.priority === priorityFilter;
+    const matchesSearch = searchQuery === '' ? true : 
+      (t.subject?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+       t.ticketNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       t.customerId?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    return matchesStatus && matchesPriority && matchesSearch;
+  });
 
   return (
     <>
       <Header title="Support Inbox" subtitle="Manage customer inquiries and issues" />
 
       <div className="app-content">
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter('all')}>All Tickets</button>
-            <button className={`btn ${filter === 'open' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter('open')}>Open</button>
-            <button className={`btn ${filter === 'resolved' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter('resolved')}>Resolved</button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', alignSelf: 'center', marginRight: 4 }}>Status:</span>
+              <button className={`btn btn-sm ${statusFilter === 'all' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setStatusFilter('all')}>All</button>
+              <button className={`btn btn-sm ${statusFilter === 'open' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setStatusFilter('open')}>Open</button>
+              <button className={`btn btn-sm ${statusFilter === 'in-progress' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setStatusFilter('in-progress')}>In Progress</button>
+              <button className={`btn btn-sm ${statusFilter === 'resolved' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setStatusFilter('resolved')}>Resolved</button>
+              <button className={`btn btn-sm ${statusFilter === 'closed' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setStatusFilter('closed')}>Closed</button>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', alignSelf: 'center', marginRight: 4 }}>Priority:</span>
+              <button className={`btn btn-sm ${priorityFilter === 'all' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setPriorityFilter('all')}>All</button>
+              <button className={`btn btn-sm ${priorityFilter === 'urgent' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setPriorityFilter('urgent')}>Urgent</button>
+              <button className={`btn btn-sm ${priorityFilter === 'high' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setPriorityFilter('high')}>High</button>
+              <button className={`btn btn-sm ${priorityFilter === 'medium' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setPriorityFilter('medium')}>Medium</button>
+              <button className={`btn btn-sm ${priorityFilter === 'low' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setPriorityFilter('low')}>Low</button>
+            </div>
           </div>
-          <div className="search-bar">
+          <div className="search-bar" style={{ alignSelf: 'flex-start' }}>
             <Search size={18} color="var(--text-muted)" />
-            <input type="text" placeholder="Search tickets..." />
+            <input 
+              type="text" 
+              placeholder="Search tickets..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 

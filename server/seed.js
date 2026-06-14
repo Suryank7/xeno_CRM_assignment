@@ -205,10 +205,57 @@ async function seed() {
   const insertedTickets = await Ticket.insertMany(tickets);
   console.log(`   ✅ Created ${insertedTickets.length} support tickets`);
 
+  // --- Generate Segments ---
+  console.log('🎯 Generating segments...');
+  const Segment = require('./src/models/Segment');
+  await Segment.deleteMany({});
+  const segments = [
+    { name: 'VIP Elite Spenders', description: 'Top 10% customers by lifetime value', rules: { tags: 'vip' }, createdBy: 'ai', audienceSize: 120 },
+    { name: 'High Risk Churners', description: 'Active customers who haven\'t bought in 90 days', rules: { "digitalTwin.churnRisk": "high" }, createdBy: 'ai', audienceSize: 85 },
+    { name: 'Frequent Active Buyers', description: 'High engagement customers', rules: { totalOrders: { $gt: 5 } }, createdBy: 'ai', audienceSize: 210 }
+  ];
+  const insertedSegments = await Segment.insertMany(segments);
+  console.log(`   ✅ Created ${insertedSegments.length} segments`);
+
+  // --- Generate Campaigns ---
+  console.log('📣 Generating campaigns...');
+  const Campaign = require('./src/models/Campaign');
+  await Campaign.deleteMany({});
+  const campaigns = [
+    {
+      name: 'Diwali VIP Early Access',
+      segmentId: insertedSegments[0]._id,
+      channel: 'whatsapp',
+      messageTemplate: 'Exclusive VIP access to Diwali sale starts now! 🎉',
+      status: 'completed',
+      stats: { total: 120, sent: 120, delivered: 118, failed: 2, opened: 95, read: 80, clicked: 45, purchased: 12 }
+    },
+    {
+      name: 'Win-back Offer (Inactive)',
+      segmentId: insertedSegments[1]._id,
+      channel: 'email',
+      messageTemplate: 'We miss you! Here is a 20% off coupon inside.',
+      status: 'sending',
+      stats: { total: 85, sent: 40, delivered: 39, failed: 1, opened: 15, read: 12, clicked: 5, purchased: 0 }
+    },
+    {
+      name: 'Weekend Flash Sale SMS',
+      segmentId: insertedSegments[2]._id,
+      channel: 'sms',
+      messageTemplate: 'Flash sale ends in 3 hours! Grab your items now.',
+      status: 'completed',
+      stats: { total: 210, sent: 210, delivered: 205, failed: 5, opened: 0, read: 0, clicked: 60, purchased: 15 }
+    }
+  ];
+  const insertedCampaigns = await Campaign.insertMany(campaigns);
+  console.log(`   ✅ Created ${insertedCampaigns.length} campaigns`);
+
   console.log('\n🎉 Seed complete!');
   console.log(`   Customers: ${insertedCustomers.length}`);
   console.log(`   Orders: ${orders.length}`);
   console.log(`   Tickets: ${insertedTickets.length}`);
+  console.log(`   Segments: ${insertedSegments.length}`);
+  console.log(`   Campaigns: ${insertedCampaigns.length}`);
 
   process.exit(0);
 }
