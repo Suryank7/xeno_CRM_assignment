@@ -169,9 +169,46 @@ async function seed() {
   }
 
   console.log(`   ✅ Created ${orders.length} orders total`);
+
+  // --- Generate Support Tickets ---
+  console.log('🎟️ Generating support tickets...');
+  const Ticket = require('./src/models/Ticket');
+  await Ticket.deleteMany({});
+  
+  const tickets = [];
+  const subjects = [
+    'Order delayed', 'Product quality issue', 'Address change request', 
+    'Refund status', 'Need help with account', 'Damaged item received',
+    'Payment failed but amount deducted', 'Where is my order?'
+  ];
+
+  for (let i = 0; i < 50; i++) {
+    const customer = insertedCustomers[i];
+    const status = pick(['open', 'in-progress', 'resolved', 'closed']);
+    tickets.push({
+      ticketNumber: 'TK-' + Math.floor(100000 + Math.random() * 900000),
+      customerId: customer._id,
+      subject: pick(subjects),
+      status: status,
+      priority: pick(['low', 'medium', 'high', 'urgent']),
+      category: pick(['order', 'product', 'shipping', 'other']),
+      messages: [
+        {
+          sender: 'customer',
+          senderName: customer.name,
+          content: `Hi, I am facing an issue regarding: ${pick(subjects)}. Please help.`
+        }
+      ]
+    });
+  }
+
+  const insertedTickets = await Ticket.insertMany(tickets);
+  console.log(`   ✅ Created ${insertedTickets.length} support tickets`);
+
   console.log('\n🎉 Seed complete!');
   console.log(`   Customers: ${insertedCustomers.length}`);
   console.log(`   Orders: ${orders.length}`);
+  console.log(`   Tickets: ${insertedTickets.length}`);
 
   process.exit(0);
 }

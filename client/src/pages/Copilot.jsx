@@ -67,9 +67,20 @@ export default function Copilot() {
 
   async function handleCreateCampaign(plan) {
     try {
+      // 1. First automatically save the segment
+      const segRes = await createSegment({
+        name: plan.audience.segmentName,
+        description: plan.audience.description,
+        rules: plan.audience.rules,
+        createdBy: 'ai',
+        aiExplanation: plan.audience.explanation,
+      });
+      const segmentId = segRes.data.data._id;
+
+      // 2. Then create the campaign
       const res = await createCampaign({
         name: plan.campaign.name,
-        segmentId: null, // Will need a saved segment first
+        segmentId: segmentId,
         channel: plan.channel.recommendation,
         messageTemplate: plan.campaign.variants?.[0]?.message || '',
         messageVariants: plan.campaign.variants,
@@ -84,7 +95,7 @@ export default function Copilot() {
       });
       navigate(`/campaigns/${res.data.data._id}`);
     } catch (err) {
-      alert('Save the segment first, then create the campaign from there.');
+      alert('Failed to create campaign: ' + (err.response?.data?.error || err.message));
     }
   }
 
@@ -128,9 +139,14 @@ export default function Copilot() {
               ))}
             </div>
           )}
-          <button className="btn btn-sm btn-secondary" style={{ marginTop: 8 }} onClick={() => handleSaveSegment(plan.audience)}>
-            <Plus size={14} /> Save Segment
-          </button>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button className="btn btn-sm btn-secondary" onClick={() => handleSaveSegment(plan.audience)}>
+              <Plus size={14} /> Save Segment
+            </button>
+            <button className="btn btn-sm btn-primary" onClick={() => handleCreateCampaign(plan)}>
+              <Zap size={14} /> Create Campaign
+            </button>
+          </div>
         </div>
 
         {/* Channel Recommendation */}

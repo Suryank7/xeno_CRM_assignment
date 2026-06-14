@@ -12,7 +12,22 @@ function getMockJSONFallback(systemPrompt, userMessage) {
   console.log('Executing Smart Mock Fallback...');
   
   const lowerMsg = userMessage.toLowerCase();
-  if (systemPrompt.includes('Segment') || lowerMsg.includes('spend') || lowerMsg.includes('purchasing') || systemPrompt.includes('Audience')) {
+  
+  if (systemPrompt.includes('Executive Briefing')) {
+    return {
+      headline: "Business is performing strongly with steady growth in active customers.",
+      healthScore: 84,
+      bullets: [
+        "High value spenders contribute to 40% of overall revenue.",
+        "Recent WhatsApp campaigns have a 12% higher open rate than email.",
+        "Active retention is up 4% month-over-month.",
+        "Average order value has increased to ₹4,200."
+      ],
+      risks: [{ title: "Dormant Audience", severity: "medium", description: "15% of users haven't purchased in 90 days." }],
+      opportunities: [{ title: "VIP Campaign", impact: "high", description: "Target top 10% spenders with exclusive early access." }],
+      recommendation: "Launch a re-engagement campaign for dormant users while upselling the VIP segment."
+    };
+  } else if (systemPrompt.includes('Segment') || lowerMsg.includes('spend') || lowerMsg.includes('purchasing') || systemPrompt.includes('Audience')) {
     // Extract the actual query inside quotes to avoid reading numbers from the database context
     const userQueryMatch = userMessage.match(/"([^"]+)"/);
     const actualQuery = userQueryMatch ? userQueryMatch[1].toLowerCase() : lowerMsg;
@@ -75,19 +90,45 @@ function getMockJSONFallback(systemPrompt, userMessage) {
       rules,
       explanation: { reasoning, confidence: 92 }
     };
-  } else {
+  } else if (systemPrompt.includes('Optimization')) {
     return {
-      headline: "Business is performing strongly with steady growth in active customers.",
-      healthScore: 84,
-      bullets: [
-        "High value spenders contribute to 40% of overall revenue.",
-        "Recent WhatsApp campaigns have a 12% higher open rate than email.",
-        "Active retention is up 4% month-over-month.",
-        "Average order value has increased to ₹4,200."
+      insights: ["WhatsApp campaigns have a 20% higher open rate on weekends.", "VIP segment converts 3x better when offered early access."],
+      recommendations: ["Shift 40% of email budget to WhatsApp for weekend campaigns.", "Create an 'Early Access' tier for top 10% spenders."],
+      performanceScore: 82,
+      segmentLearnings: "High engagement from users aged 25-34",
+      channelLearnings: "WhatsApp outperforms SMS for time-sensitive offers",
+      messageLearnings: "Urgency-driven tone increases CTR by 15%"
+    };
+  } else if (systemPrompt.includes('Channel')) {
+    return {
+      predictions: [
+        { channel: "whatsapp", openRate: 85, clickRate: 25, conversion: 12, confidence: 90, bestFor: "Immediate engagement" },
+        { channel: "sms", openRate: 60, clickRate: 15, conversion: 5, confidence: 80, bestFor: "Short alerts" },
+        { channel: "email", openRate: 25, clickRate: 5, conversion: 2, confidence: 85, bestFor: "Detailed promotions" }
       ],
-      risks: [{ title: "Dormant Audience", severity: "medium", description: "15% of users haven't purchased in 90 days." }],
-      opportunities: [{ title: "VIP Campaign", impact: "high", description: "Target top 10% spenders with exclusive early access." }],
-      recommendation: "Launch a re-engagement campaign for dormant users while upselling the VIP segment."
+      recommendation: "whatsapp",
+      reasoning: "Given the segment characteristics, WhatsApp provides the highest likelihood of immediate conversion.",
+      explanation: { reasoning: ["High historical engagement", "Best for demographic"], confidence: 90 }
+    };
+  } else if (systemPrompt.includes('Campaign')) {
+    return {
+      name: "Smart Re-engagement Campaign",
+      explanation: { reasoning: ["Targeting high-intent users", "Utilizing top channel"], confidence: 88, dataPointsUsed: 4, alternativesConsidered: ["Discount Blast", "Newsletter"] },
+      variants: [
+        { variantId: "A", message: "Hi! We miss you. Enjoy 20% off your next order today! 🛍️", tone: "friendly", predictedCTR: 15 },
+        { variantId: "B", message: "Exclusive offer inside: Your 20% discount is expiring soon! ⏰", tone: "urgent", predictedCTR: 22 }
+      ],
+      recommendedVariant: "B",
+      reasoning: "Urgency has historically outperformed friendly tones for inactive users."
+    };
+  } else {
+    // Analytics fallback
+    return {
+      summary: "Campaign performed above average, primarily driven by strong WhatsApp engagement.",
+      sentiment: "positive",
+      keyDrivers: ["High open rate", "Effective discount offer"],
+      anomalyDetected: false,
+      anomalyDescription: ""
     };
   }
 }

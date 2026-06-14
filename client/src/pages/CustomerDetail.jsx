@@ -271,6 +271,28 @@ export default function CustomerDetail() {
             <div className="card animate-slide-up" style={{ animationDelay: '0.4s' }}>
               <div className="card-header">
                 <h3 className="card-title">Support Tickets</h3>
+                <button 
+                  className="btn btn-sm btn-secondary" 
+                  onClick={async () => {
+                    const subject = prompt('Enter ticket subject:');
+                    if (!subject) return;
+                    try {
+                      const { default: api } = await import('../services/api');
+                      await api.post('/tickets', {
+                        customerId: customer._id,
+                        subject: subject,
+                        priority: 'medium',
+                        status: 'open',
+                        messages: [{ sender: 'agent', senderName: 'Agent', content: 'Ticket opened by agent.' }]
+                      });
+                      loadCustomer();
+                    } catch (err) {
+                      alert('Failed to create ticket');
+                    }
+                  }}
+                >
+                  Create Ticket
+                </button>
               </div>
               <div className="card-body" style={{ padding: '0 24px 24px' }}>
                 {customer.tickets?.length > 0 ? (
