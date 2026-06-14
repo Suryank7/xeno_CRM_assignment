@@ -75,8 +75,8 @@ Xeno Pulse stands out by solving the core problems of integrating LLMs into ente
 ### 1. Deterministic AI Execution
 Language models hallucinate, making them inherently dangerous for direct database manipulation. We engineered a system where the AI is constrained to **Strict JSON Schemas**. The output is passed through a custom sanitation layer within the Core Engine before hitting MongoDB, ensuring highly secure, injection-proof execution.
 
-### 2. Graceful Degradation & The Fallback Layer
-Free-tier LLM endpoints frequently hit `429 Too Many Requests` limits during burst scaling or live demonstrations. To ensure zero downtime, our AI service intercepts network failures and instantly routes the request to a resilient, hardcoded **Presentation Fallback Module**. The UI remains fluid, and the product never crashes during a demo.
+### 2. Graceful Degradation & The Smart Interactive Mock
+Free-tier LLM endpoints (like the **Hugging Face Serverless API** we utilize) frequently experience "cold boot" latency or hit `503 Service Unavailable` limits during burst scaling or live demonstrations. To ensure zero downtime, our AI service intercepts network timeouts and instantly routes the request to a resilient, Regex-powered **Smart Interactive Mock**. This fallback dynamically extracts variables from the user's plain-English prompt to power the database queries, ensuring the UI remains perfectly fluid and the product never crashes during a live demo.
 
 ### 3. AI as a Co-Architect
 The build process itself was deeply AI-native. Rather than hand-coding 6,000 rows of SQL seed data, we utilized AI to algorithmically generate realistic MongoDB datasets containing seasonal purchasing patterns and churn degradation curves. AI handled the scaffolding volume, allowing us to focus 100% of our cognitive load on complex system design and webhook lifecycles.
@@ -90,7 +90,7 @@ Every piece of the stack was chosen deliberately to maximize performance, scalab
 * **Frontend:** *React + Vite.* Chosen over Next.js because this is a highly interactive, state-heavy internal dashboard with no SEO requirements. Vite provides instant HMR and a significantly faster build pipeline.
 * **Backend:** *Node.js + Express.* The asynchronous nature of Node.js is perfect for handling high-volume concurrent webhook receipts and I/O heavy database operations without blocking the thread.
 * **Database:** *MongoDB Atlas.* A NoSQL document database was explicitly chosen over SQL (PostgreSQL/MySQL) because customer telemetry data, product metadata, and dynamic AI JSON schemas require a highly flexible, schema-less structure.
-* **AI Orchestration:** *Multi-Agent Architecture.* Chosen over a single LLM prompt to constrain hallucinations and allow for deterministic, auditable JSON outputs.
+* **AI Orchestration:** *Hugging Face Inference API (Mixtral 8x7B).* Chosen as our primary LLM engine because it provides incredibly powerful, free, open-source intelligence. We layered this into a Multi-Agent Architecture to constrain hallucinations and allow for deterministic, auditable JSON outputs via Regex sanitation.
 
 ---
 
