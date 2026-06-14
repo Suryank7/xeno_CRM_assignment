@@ -228,7 +228,16 @@ async function seed() {
       channel: 'whatsapp',
       messageTemplate: 'Exclusive VIP access to Diwali sale starts now! 🎉',
       status: 'completed',
-      stats: { total: 120, sent: 120, delivered: 118, failed: 2, opened: 95, read: 80, clicked: 45, purchased: 12 }
+      stats: { total: 120, sent: 120, delivered: 118, failed: 2, opened: 95, read: 80, clicked: 45, purchased: 12 },
+      aiExplanation: {
+        reasoning: ["Targeting top 10% spenders based on historical high AOV.", "WhatsApp selected due to 85% predicted open rate for VIPs."],
+        confidence: 94,
+        dataPointsUsed: 5,
+      },
+      messageVariants: [
+        { variantId: "A", message: "Exclusive VIP access to Diwali sale starts now! 🎉", tone: "Excited", predictedCTR: 15, isWinner: true },
+        { variantId: "B", message: "Your VIP Diwali access is here. Shop before others.", tone: "Exclusive", predictedCTR: 12, isWinner: false },
+      ]
     },
     {
       name: 'Win-back Offer (Inactive)',
@@ -236,7 +245,15 @@ async function seed() {
       channel: 'email',
       messageTemplate: 'We miss you! Here is a 20% off coupon inside.',
       status: 'sending',
-      stats: { total: 85, sent: 40, delivered: 39, failed: 1, opened: 15, read: 12, clicked: 5, purchased: 0 }
+      stats: { total: 85, sent: 40, delivered: 39, failed: 1, opened: 15, read: 12, clicked: 5, purchased: 0 },
+      aiExplanation: {
+        reasoning: ["Audience has not ordered in 90+ days.", "Email chosen for detailed visual offer presentation."],
+        confidence: 82,
+        dataPointsUsed: 3,
+      },
+      messageVariants: [
+        { variantId: "A", message: "We miss you! Here is a 20% off coupon inside.", tone: "Friendly", predictedCTR: 8, isWinner: false }
+      ]
     },
     {
       name: 'Weekend Flash Sale SMS',
@@ -244,11 +261,46 @@ async function seed() {
       channel: 'sms',
       messageTemplate: 'Flash sale ends in 3 hours! Grab your items now.',
       status: 'completed',
-      stats: { total: 210, sent: 210, delivered: 205, failed: 5, opened: 0, read: 0, clicked: 60, purchased: 15 }
+      stats: { total: 210, sent: 210, delivered: 205, failed: 5, opened: 0, read: 0, clicked: 60, purchased: 15 },
+      aiExplanation: {
+        reasoning: ["High engagement segment likely to convert on impulse.", "SMS is best for time-sensitive flash sales."],
+        confidence: 88,
+        dataPointsUsed: 4,
+      },
+      messageVariants: [
+        { variantId: "A", message: "Flash sale ends in 3 hours! Grab your items now.", tone: "Urgent", predictedCTR: 18, isWinner: true },
+        { variantId: "B", message: "Weekend flash sale is live. Tap to see deals.", tone: "Direct", predictedCTR: 11, isWinner: false }
+      ]
     }
   ];
   const insertedCampaigns = await Campaign.insertMany(campaigns);
   console.log(`   ✅ Created ${insertedCampaigns.length} campaigns`);
+
+  // --- Generate Messages ---
+  console.log('✉️ Generating messages...');
+  const Message = require('./src/models/Message');
+  await Message.deleteMany({});
+  const mockMessages = [];
+
+  for (const campaign of insertedCampaigns) {
+    if (campaign.status === 'draft') continue;
+    
+    // Create ~10 mock messages for demo visualization
+    for (let i = 0; i < Math.min(10, campaign.stats.total || 0); i++) {
+      const cst = pick(insertedCustomers);
+      mockMessages.push({
+        campaignId: campaign._id,
+        customerId: cst._id,
+        channel: campaign.channel,
+        content: campaign.messageTemplate,
+        variantId: pick(['A', 'B']),
+        status: pick(['delivered', 'opened', 'clicked', 'purchased']),
+        sentAt: new Date(Date.now() - 3600000 * Math.random()),
+      });
+    }
+  }
+  const insertedMessages = await Message.insertMany(mockMessages);
+  console.log(`   ✅ Created ${insertedMessages.length} messages`);
 
   console.log('\n🎉 Seed complete!');
   console.log(`   Customers: ${insertedCustomers.length}`);

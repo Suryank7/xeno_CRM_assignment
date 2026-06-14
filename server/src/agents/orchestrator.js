@@ -84,7 +84,7 @@ async function runGrowthPipeline(goal, customerStats = {}) {
       explanation: channelPrediction.explanation,
     },
     campaign: {
-      name: campaign.campaignName,
+      name: campaign.campaignName || campaign.name || 'AI Generated Campaign',
       variants: campaign.variants,
       recommendedVariant: campaign.recommendedVariant,
       recommendationReason: campaign.recommendationReason,
