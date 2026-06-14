@@ -83,11 +83,19 @@ async function generateJSON(systemPrompt, userMessage) {
   console.log('Using hardcoded mock for fast presentation response...');
   
   // MOCK DATA FALLBACK (For interviews/presentations when APIs rate-limit)
-  if (systemPrompt.includes('Segment') || userMessage.includes('spend')) {
+  if (systemPrompt.includes('Segment') || userMessage.includes('spend') || userMessage.includes('purchasing')) {
+    
+    // Make the mock interactive! Extract the number they type in the UI.
+    let minSpend = 5000;
+    const match = userMessage.match(/\b\d+\b/); // Find any number in the string
+    if (match) {
+      minSpend = parseInt(match[0], 10);
+    }
+
     return {
-      segmentName: 'High Value Spenders',
-      description: 'Customers with high average order value and frequent purchases.',
-      rules: { totalSpent: { $gte: 5000 } }
+      segmentName: `Spenders over ₹${minSpend}`,
+      description: `Customers who have purchased over ₹${minSpend}.`,
+      rules: { totalSpent: { $gte: minSpend } }
     };
   } else {
     // Executive Brief Structure
