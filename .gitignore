@@ -15,3 +15,7 @@ logs/
 demo.txt
 temp/
 tmp/
+generate_csv.js
+data/
+customers_demo.csv
+orders_demo.csv

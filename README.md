@@ -10,6 +10,12 @@
 
 > **Command the destination. Let the AI orchestrate the journey.**
 
+### 🌟 Live Demo
+- **App URL:** [https://xeno-pulse.vercel.app/](https://xeno-pulse.vercel.app/)
+- **Demo Credentials:**
+  - **Email:** test@demo.com
+  - **Password:** pass123
+
 Xeno Pulse is not just another CRM or data filtering tool. It is an **Autonomous Growth Operating System** designed to act as a fractional Chief Marketing Officer for modern retail brands. Built as a comprehensive submission for the Xeno Engineering Assessment, this ecosystem completely redefines the CRM paradigm—shifting from manual segment creation to autonomous revenue orchestration.
 
 ---
